@@ -1,0 +1,38 @@
+services:
+  catalog-service:
+    build: ./catalog-service
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/readiness" ]
+      interval: 10s
+      start_period: 30s
+      retries: 3
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-catalog}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-catalog}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-catalog}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  fake-price-service:
+    build: ./fake-price-service
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/readiness"]
+      interval: 10s
+      start_period: 30s
+      retries: 3
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-catalog}
+      POSTGRES_USER: ${POSTGRES_USER:-catalog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-catalog}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-catalog}"]
+      interval: 5s
+      retries: 10

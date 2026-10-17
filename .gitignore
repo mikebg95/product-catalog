@@ -1,0 +1,14 @@
+### Markdown & AI assistant files ###
+/jdriven-assignment.md
+CLAUDE.md
+.claude/
+AGENTS.md
+.cursor/
+.cursorrules
+.github/copilot-instructions.md
+.aider*
+.windsurfrules
+.continue/
+
+### IntelliJ IDEA ###
+.idea/

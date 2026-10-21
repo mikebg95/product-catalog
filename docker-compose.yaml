@@ -26,6 +26,32 @@ services:
       start_period: 30s
       retries: 3
 
+  # build from repo root, because builds generate types from catalog-service's OpenAPI contract
+  catalog-ui:
+    build:
+      context: .
+      dockerfile: catalog-ui/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - catalog-service
+
+  fake-pim:
+    build:
+      context: .
+      dockerfile: fake-pim/Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      - catalog-service
+
+  fake-price-ui:
+    build: ./fake-price-ui
+    ports:
+      - "3002:80"
+    depends_on:
+      - fake-price-service
+
   postgres:
     image: postgres:18-alpine
     environment:

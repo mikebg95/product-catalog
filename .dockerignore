@@ -1,0 +1,6 @@
+# Used by builds whose context is the repo root (catalog-ui, fake-pim).
+**/node_modules
+**/dist
+**/target
+.git
+.idea

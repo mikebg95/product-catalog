@@ -1,13 +1,14 @@
 :root {
   /* Accent: the only part that differs between the three apps. */
   --accent: #ea580c;
-  --accent-2: #f59e0b;
+  --accent-2: #c2410c;
+  --accent-deep: #9a3412;
   --accent-soft: rgba(234, 88, 12, 0.1);
   --accent-text: #c2410c;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --accent-soft: rgba(245, 158, 11, 0.16);
+    --accent-soft: rgba(251, 146, 60, 0.16);
     --accent-text: #fdba74;
   }
 }
@@ -50,20 +51,13 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 h1, h2, h3, p { margin: 0; }
 button, input, textarea { font: inherit; color: inherit; }
 
-/* top bar */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-}
+/* top bar: a slim bar in the app's color, so you see at once which app you're in */
+.topbar { background: var(--accent-2); color: #fff; }
 .topbar-inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 0 24px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -71,49 +65,50 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .brand { display: flex; align-items: center; gap: 12px; }
 .logo {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: rgba(255, 255, 255, 0.16);
 }
-.logo svg { width: 20px; height: 20px; }
-.brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
-.brand-sub { color: var(--muted); font-size: 12.5px; }
+.logo svg { width: 18px; height: 18px; }
+.brand-name { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.brand-sub { color: rgba(255, 255, 255, 0.75); font-size: 12px; }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 5px 11px;
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--accent-text);
-  background: var(--accent-soft);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
   white-space: nowrap;
 }
-.badge-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: pulse 2s ease-in-out infinite;
-}
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 2s ease-in-out infinite; }
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
   50% { box-shadow: 0 0 0 5px transparent; }
 }
 
 /* page */
-.page { max-width: 1120px; margin: 0 auto; padding: 36px 24px 64px; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-.page-title { font-size: 28px; font-weight: 750; letter-spacing: -0.02em; }
+.page-head {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 24px 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
 .page-sub { color: var(--muted); margin-top: 4px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.page { max-width: 1120px; margin: 0 auto; padding: 0 24px 64px; }
 
 /* cards */
 .card {
@@ -160,10 +155,9 @@ button, input, textarea { font: inherit; color: inherit; }
 .btn-primary {
   border: 0;
   color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--accent-2);
 }
-.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:hover { background: var(--accent-deep); }
 
 /* forms */
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
@@ -202,12 +196,16 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 }
 .empty-title { color: var(--text); font-weight: 700; font-size: 16px; margin-bottom: 4px; }
 .error-banner {
-  padding: 12px 16px;
+  padding: 14px 16px;
   border-radius: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   font-size: 14px;
+  font-weight: 600;
   color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--danger);
+  box-shadow: var(--shadow);
 }
 
 /* toast */
@@ -228,7 +226,7 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(8px); }
 
 @media (max-width: 640px) {
-  .topbar-inner, .page { padding-left: 16px; padding-right: 16px; }
+  .topbar-inner, .page-head, .page { padding-left: 16px; padding-right: 16px; }
   .brand-sub { display: none; }
   .row { grid-template-columns: 1fr; }
 }

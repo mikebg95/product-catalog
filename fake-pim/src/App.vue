@@ -48,29 +48,24 @@ onMounted(refresh)
 </script>
 
 <template>
-  <AppHeader name="PIM" sub="Product information">
+  <AppHeader name="PIM" sub="Product information" title="Products" subtitle="Sent to the catalog with PUT /products/{sku}">
     <template #icon>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5" /><path d="M12 13v8" />
       </svg>
     </template>
-    <span class="badge">External system · demo</span>
+    <template #badge>
+      <span class="badge">External system · demo</span>
+    </template>
+    <template #actions>
+      <button class="btn" @click="selected = null">New product</button>
+      <button class="btn btn-primary" :disabled="loadingDemo" @click="loadDemo">
+        {{ loadingDemo ? 'Loading…' : 'Load demo products' }}
+      </button>
+    </template>
   </AppHeader>
 
   <main class="page">
-    <div class="page-head">
-      <div>
-        <h1 class="page-title">Products</h1>
-        <p class="page-sub">Sent to the catalog with PUT /products/{sku}</p>
-      </div>
-      <div class="actions">
-        <button class="btn" @click="selected = null">New product</button>
-        <button class="btn btn-primary" :disabled="loadingDemo" @click="loadDemo">
-          {{ loadingDemo ? 'Loading…' : 'Load demo products' }}
-        </button>
-      </div>
-    </div>
-
     <div class="layout">
       <section class="card list">
         <p v-if="products.length === 0" class="list-empty">No products yet. Load the demo products, or add one.</p>

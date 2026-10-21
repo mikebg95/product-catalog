@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ name: string; sub: string }>()
+defineProps<{ name: string; sub: string; title: string; subtitle: string }>()
 </script>
 
 <template>
@@ -12,7 +12,14 @@ defineProps<{ name: string; sub: string }>()
           <div class="brand-sub">{{ sub }}</div>
         </div>
       </div>
-      <slot />
+      <slot name="badge" />
     </div>
   </header>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">{{ title }}</h1>
+      <p class="page-sub">{{ subtitle }}</p>
+    </div>
+    <div class="actions"><slot name="actions" /></div>
+  </div>
 </template>

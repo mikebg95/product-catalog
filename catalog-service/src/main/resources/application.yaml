@@ -1,6 +1,9 @@
 spring:
   application:
     name: catalog-service
+  jpa:
+    hibernate:
+      ddl-auto: validate
 
 management:
   endpoint:

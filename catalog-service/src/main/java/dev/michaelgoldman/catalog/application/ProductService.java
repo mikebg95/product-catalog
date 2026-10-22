@@ -1,0 +1,36 @@
+package dev.michaelgoldman.catalog.application;
+
+import dev.michaelgoldman.catalog.application.port.ProductRepository;
+import dev.michaelgoldman.catalog.domain.Product;
+
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class ProductService {
+    private final ProductRepository repository;
+
+    public ProductService(ProductRepository repository) {
+        this.repository = repository;
+    }
+
+    // create or replace by SKU: replace keeps the existing price; only price sync can change price
+    @Transactional
+    public void upsert(UpsertProductCommand command) {
+        Optional<Product> existing = repository.findBySku(command.sku());
+
+        Product product;
+        if (existing.isPresent()) {
+            product = existing.get();
+            product.replaceDetails(command.name(), command.description(), command.brand(),
+                    command.category(), command.attributes());
+        } else {
+            product = Product.create(command.sku(), command.name(), command.description(),
+                    command.brand(), command.category(), command.attributes());
+        }
+
+        repository.save(product);
+    }
+}

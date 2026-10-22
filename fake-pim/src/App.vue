@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { listProducts, upsertProduct, type Product } from './api/client'
+import { ref } from 'vue'
+import { upsertProduct } from './api/client'
 import AppHeader from './components/AppHeader.vue'
 import ProductForm from './components/ProductForm.vue'
 import { demoProducts } from './demoProducts'
+import { loadProducts, storeProduct, type PimProduct } from './store'
 
-const products = ref<Product[]>([])
-const selected = ref<Product | null>(null)
+const products = ref<PimProduct[]>(loadProducts())
+const selected = ref<PimProduct | null>(null)
 const loadingDemo = ref(false)
 const toast = ref<{ text: string; error: boolean } | null>(null)
 let toastTimer: number | undefined
@@ -17,34 +18,34 @@ function notify(text: string, error = false) {
   toastTimer = window.setTimeout(() => (toast.value = null), 3000)
 }
 
-async function refresh() {
-  try {
-    products.value = (await listProducts(0, 100)).content
-  } catch (e) {
-    notify(`Can't load products: ${e instanceof Error ? e.message : e}`, true)
-  }
+function onSaved(product: PimProduct, created: boolean) {
+  products.value = loadProducts()
+  selected.value = product
+  notify(`${created ? 'Created' : 'Updated'} ${product.sku} in the catalog`)
 }
 
-async function onSaved(sku: string, created: boolean) {
-  notify(`${created ? 'Created' : 'Updated'} ${sku}`)
-  await refresh()
-  selected.value = products.value.find((p) => p.sku === sku) ?? null
+function onFailed(product: PimProduct, message: string) {
+  products.value = loadProducts()
+  selected.value = product
+  notify(`Saved in the PIM, but not sent to the catalog: ${message}`, true)
 }
 
 async function loadDemo() {
   loadingDemo.value = true
   try {
-    for (const { sku, ...product } of demoProducts) await upsertProduct(sku, product)
-    notify(`Loaded ${demoProducts.length} demo products`)
+    for (const product of demoProducts) {
+      storeProduct(product)
+      const { sku, ...request } = product
+      await upsertProduct(sku, request)
+    }
+    notify(`Loaded ${demoProducts.length} demo products and sent them to the catalog`)
   } catch (e) {
-    notify(`Loading failed: ${e instanceof Error ? e.message : e}`, true)
+    notify(`Saved in the PIM, but sending failed: ${e instanceof Error ? e.message : e}`, true)
   } finally {
     loadingDemo.value = false
-    await refresh()
+    products.value = loadProducts()
   }
 }
-
-onMounted(refresh)
 </script>
 
 <template>
@@ -79,9 +80,10 @@ onMounted(refresh)
           <span class="list-name">{{ p.name }}</span>
           <span class="list-meta">{{ p.sku }}<template v-if="p.brand"> · {{ p.brand }}</template></span>
         </button>
+        <p class="list-note">Kept in this browser. The PIM owns its product data and sends it to the catalog.</p>
       </section>
 
-      <ProductForm :product="selected" @saved="onSaved" @failed="(m) => notify(m, true)" />
+      <ProductForm :product="selected" @saved="onSaved" @failed="onFailed" />
     </div>
   </main>
 
@@ -94,6 +96,7 @@ onMounted(refresh)
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
 .list { padding: 6px; }
 .list-empty { padding: 20px; color: var(--muted); font-size: 14px; }
+.list-note { margin: 6px 8px 4px; padding-top: 8px; border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08)); color: var(--muted); font-size: 12px; }
 .list-item {
   width: 100%;
   display: flex;

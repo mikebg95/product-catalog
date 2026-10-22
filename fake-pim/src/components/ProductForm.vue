@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
-import { upsertProduct, type Product, type ProductRequest } from '../api/client'
+import { upsertProduct, type ProductRequest } from '../api/client'
+import { storeProduct, type PimProduct } from '../store'
 
 // null = a new product
-const props = defineProps<{ product: Product | null }>()
-const emit = defineEmits<{ saved: [sku: string, created: boolean]; failed: [message: string] }>()
+const props = defineProps<{ product: PimProduct | null }>()
+const emit = defineEmits<{ saved: [product: PimProduct, created: boolean]; failed: [product: PimProduct, message: string] }>()
 
 type Row = { key: string; value: string }
 const form = reactive({ sku: '', name: '', brand: '', category: '', description: '', attributes: [] as Row[] })
@@ -41,12 +42,15 @@ async function save() {
       form.attributes.filter((row) => row.key.trim()).map((row) => [row.key.trim(), parse(row.value)]),
     ),
   }
+  const product: PimProduct = { sku: form.sku.trim(), ...request }
+  // Saved in the PIM first (it owns the data), then sent to the catalog.
+  storeProduct(product)
   saving.value = true
   try {
-    const { created } = await upsertProduct(form.sku.trim(), request)
-    emit('saved', form.sku.trim(), created)
+    const { created } = await upsertProduct(product.sku, request)
+    emit('saved', product, created)
   } catch (e) {
-    emit('failed', e instanceof Error ? e.message : String(e))
+    emit('failed', product, e instanceof Error ? e.message : String(e))
   } finally {
     saving.value = false
   }

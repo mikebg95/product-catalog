@@ -1,6 +1,6 @@
 import type { ProductRequest } from './api/client'
 
-// The demo data set. fake-price-service must serve prices for exactly these SKUs.
+// The demo data set. Each SKU is also registered at fake-price-service once fake-pim does that (Phase 5).
 export const demoProducts: Array<{ sku: string } & ProductRequest> = [
   {
     sku: 'SHOE-RUN-42',

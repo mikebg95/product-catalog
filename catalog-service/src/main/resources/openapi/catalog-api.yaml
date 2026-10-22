@@ -2,4 +2,231 @@ openapi: 3.1.0
 info:
   title: Catalog API
   version: 0.0.1
-paths: {}
+  description: |
+    Product catalog of an e-commerce shop. Products are sent by an external system;
+    prices are synced from an external price system and are read-only here.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Products
+    description: Create, replace and read products
+
+paths:
+  /products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: List products, one page at a time
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 0
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Number of products per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: One page of products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /products/{sku}:
+    parameters:
+      - $ref: '#/components/parameters/Sku'
+    put:
+      tags: [Products]
+      operationId: upsertProduct
+      summary: Create or replace a product
+      description: |
+        Creates the product if the SKU is new, otherwise replaces it completely.
+        Fields left out are cleared. The price is never set here; it only comes from the price sync.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '200':
+          description: Existing product replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '201':
+          description: New product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Get one product
+      responses:
+        '200':
+          description: The product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    Sku:
+      name: sku
+      in: path
+      required: true
+      description: Stock keeping unit, the product's unique key
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9-]{1,64}$'
+        example: SHOE-RED-42
+
+  schemas:
+    ProductRequest:
+      type: object
+      description: A product as sent by the external system. No SKU (it's in the path) and no price.
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Running shoe
+        description:
+          type: string
+          example: Lightweight running shoe for daily training
+        brand:
+          type: string
+          example: Acme
+        category:
+          type: string
+          example: Shoes
+        attributes:
+          $ref: '#/components/schemas/Attributes'
+
+    Product:
+      type: object
+      required: [sku, name, attributes]
+      properties:
+        sku:
+          type: string
+          example: SHOE-RED-42
+        name:
+          type: string
+          example: Running shoe
+        description:
+          type: string
+          example: Lightweight running shoe for daily training
+        brand:
+          type: string
+          example: Acme
+        category:
+          type: string
+          example: Shoes
+        attributes:
+          $ref: '#/components/schemas/Attributes'
+        price:
+          $ref: '#/components/schemas/Price'
+          description: Current price. Left out until the first price sync.
+
+    Attributes:
+      type: object
+      description: |
+        Free-form product characteristics. Flat only: each value is a string, number or boolean.
+        No nested objects or lists.
+      additionalProperties: true
+      example:
+        color: red
+        size: 42
+        waterproof: true
+
+    Price:
+      type: object
+      description: Read-only. Set only by the price sync.
+      required: [amount, currency, updatedAt]
+      properties:
+        amount:
+          type: number
+          description: Greater than 0, at most 2 decimals
+          example: 89.95
+        currency:
+          type: string
+          enum: [EUR]
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the external price system changed this price
+          example: '2026-10-18T12:00:00Z'
+
+    ProductPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          example: 1
+        totalPages:
+          type: integer
+          example: 1
+
+    Problem:
+      type: object
+      description: Error response in the standard RFC 9457 format (Spring's ProblemDetail)
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: No product with this SKU
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

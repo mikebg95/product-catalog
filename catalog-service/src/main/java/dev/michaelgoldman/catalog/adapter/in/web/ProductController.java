@@ -1,0 +1,40 @@
+package dev.michaelgoldman.catalog.adapter.in.web;
+
+import dev.michaelgoldman.catalog.api.ProductsApi;
+import dev.michaelgoldman.catalog.api.model.ProductDto;
+import dev.michaelgoldman.catalog.api.model.ProductPageDto;
+import dev.michaelgoldman.catalog.api.model.ProductRequestDto;
+import dev.michaelgoldman.catalog.application.ProductService;
+import dev.michaelgoldman.catalog.application.UpsertResult;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class ProductController implements ProductsApi {
+    private final ProductService productService;
+    private final ProductWebMapper productWebMapper;
+
+    public ProductController(ProductService productService, ProductWebMapper productWebMapper) {
+        this.productService = productService;
+        this.productWebMapper = productWebMapper;
+    }
+
+    @Override
+    public ResponseEntity<ProductDto> getProduct(String sku) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
+    @Override
+    public ResponseEntity<ProductPageDto> listProducts(Integer page, Integer size) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
+    @Override
+    public ResponseEntity<ProductDto> upsertProduct(String sku, ProductRequestDto productRequestDto) {
+        UpsertResult upsertResult = productService.upsert(productWebMapper.toCommand(sku, productRequestDto));
+        HttpStatus status = upsertResult.created() ? HttpStatus.CREATED : HttpStatus.OK;
+
+        return ResponseEntity.status(status).body(productWebMapper.toDto(upsertResult.product()));
+    }
+}

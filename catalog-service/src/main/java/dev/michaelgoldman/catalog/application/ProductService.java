@@ -18,7 +18,7 @@ public class ProductService {
 
     // create or replace by SKU: replace keeps the existing price; only price sync can change price
     @Transactional
-    public void upsert(UpsertProductCommand command) {
+    public UpsertResult upsert(UpsertProductCommand command) {
         Optional<Product> existing = repository.findBySku(command.sku());
 
         Product product;
@@ -32,5 +32,6 @@ public class ProductService {
         }
 
         repository.save(product);
+        return new UpsertResult(product, existing.isEmpty());
     }
 }

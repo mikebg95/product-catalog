@@ -21,8 +21,9 @@ class ProductServiceTest {
 
     @Test
     void upsert_whenNewSku_createsWithoutPrice() {
-        service.upsert(command("Running shoe"));
+        UpsertResult result = service.upsert(command("Running shoe"));
 
+        assertThat(result.created()).isTrue();
         Product saved = repository.findBySku(SKU).orElseThrow();
         assertThat(saved.getName()).isEqualTo("Running shoe");
         assertThat(saved.getPrice()).isEmpty();
@@ -33,8 +34,9 @@ class ProductServiceTest {
         Price price = new Price(new BigDecimal("89.95"), NOW);
         repository.save(new Product(SKU, "Old name", null, null, null, Map.of(), price));
 
-        service.upsert(command("New name"));
+        UpsertResult result = service.upsert(command("New name"));
 
+        assertThat(result.created()).isFalse();
         Product saved = repository.findBySku(SKU).orElseThrow();
         assertThat(saved.getName()).isEqualTo("New name");
         assertThat(saved.getPrice()).contains(price);

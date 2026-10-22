@@ -1,6 +1,7 @@
 package dev.michaelgoldman.catalog.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.michaelgoldman.catalog.domain.Price;
 import dev.michaelgoldman.catalog.domain.Product;
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 
+import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
 import org.junit.jupiter.api.Test;
 
 class ProductServiceTest {
@@ -40,6 +42,12 @@ class ProductServiceTest {
         Product saved = repository.findBySku(SKU).orElseThrow();
         assertThat(saved.getName()).isEqualTo("New name");
         assertThat(saved.getPrice()).contains(price);
+    }
+
+    @Test
+    void get_whenUnknownSku_throws() {
+        assertThatThrownBy(() -> service.get("UNKNOWN"))
+                .isInstanceOf(ProductNotFoundException.class);
     }
 
     private static UpsertProductCommand command(String name) {

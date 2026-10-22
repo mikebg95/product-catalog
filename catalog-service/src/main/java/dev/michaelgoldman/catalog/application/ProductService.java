@@ -5,6 +5,7 @@ import dev.michaelgoldman.catalog.domain.Product;
 
 import java.util.Optional;
 
+import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,5 +34,14 @@ public class ProductService {
 
         repository.save(product);
         return new UpsertResult(product, existing.isEmpty());
+    }
+
+    public Product get(String sku) {
+        Optional<Product> optional = repository.findBySku(sku);
+
+        if (optional.isEmpty()) {
+            throw new ProductNotFoundException(sku);
+        }
+        return optional.get();
     }
 }

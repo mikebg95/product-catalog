@@ -2,7 +2,7 @@ package dev.michaelgoldman.catalog.application;
 
 import java.util.Map;
 
-// The input of the upsert use case. No price: a PUT never changes it.
+// input for upsert, no price: a put never changes the price
 public record UpsertProductCommand(
         String sku,
         String name,

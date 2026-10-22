@@ -17,7 +17,7 @@ class ArchitectureTest {
 		.that().resideInAPackage("..catalog.domain..")
 		.should().onlyDependOnClassesThat().resideInAnyPackage("java..", "..catalog.domain..");
 
-	// Also an allowlist: the domain, the ports, and only the two Spring annotations we allow (@Service, @Transactional).
+	// application may only use java, the domain, its own ports, and @Service / @Transactional
 	@ArchTest
 	static final ArchRule applicationOnlyUsesDomainAndSpringAnnotations = classes()
 		.that().resideInAPackage("..catalog.application..")

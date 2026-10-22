@@ -151,7 +151,7 @@
 							<generatorName>spring</generatorName>
 							<apiPackage>dev.michaelgoldman.catalog.api</apiPackage>
 							<modelPackage>dev.michaelgoldman.catalog.api.model</modelPackage>
-							<!-- ProductDto, ProductRequestDto, ...: never mixed up with the domain Product -->
+							<!-- adds Dto to the generated class names (ProductDto etc), so they don't clash with the domain Product -->
 							<modelNameSuffix>Dto</modelNameSuffix>
 							<configOptions>
 								<interfaceOnly>true</interfaceOnly>

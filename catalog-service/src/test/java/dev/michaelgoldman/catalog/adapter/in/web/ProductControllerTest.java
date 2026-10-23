@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,6 +14,7 @@ import dev.michaelgoldman.catalog.domain.Product;
 
 import java.util.Map;
 
+import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -38,7 +40,7 @@ class ProductControllerTest {
     ProductService productService;
 
     @Test
-    void newSku_returns201() throws Exception {
+    void upsertProduct_newSku_returns201() throws Exception {
         when(productService.upsert(any())).thenReturn(new UpsertResult(product(), true));
 
         mockMvc.perform(put("/products/{sku}", SKU).contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -49,7 +51,7 @@ class ProductControllerTest {
     }
 
     @Test
-    void existingSku_returns200() throws Exception {
+    void upsertProduct_existingSku_returns200() throws Exception {
         when(productService.upsert(any())).thenReturn(new UpsertResult(product(), false));
 
         mockMvc.perform(put("/products/{sku}", SKU).contentType(MediaType.APPLICATION_JSON).content(BODY))
@@ -57,11 +59,28 @@ class ProductControllerTest {
     }
 
     @Test
-    void missingName_returns400() throws Exception {
+    void upsertProduct_missingName_returns400() throws Exception {
         mockMvc.perform(put("/products/{sku}", SKU).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(productService);
+    }
+
+    @Test
+    void getProduct_exists_returns200() throws Exception {
+        when(productService.get(any())).thenReturn(product());
+
+        mockMvc.perform(get("/products/{sku}", SKU))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sku").value(SKU));
+    }
+
+    @Test
+    void getProduct_doesNotExist_returns404() throws Exception {
+        when(productService.get(any())).thenThrow(ProductNotFoundException.class);
+
+        mockMvc.perform(get("/products/{sku}", SKU))
+                .andExpect(status().isNotFound());
     }
 
     private static Product product() {

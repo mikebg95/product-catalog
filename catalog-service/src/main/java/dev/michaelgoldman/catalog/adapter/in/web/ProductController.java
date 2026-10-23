@@ -6,6 +6,7 @@ import dev.michaelgoldman.catalog.api.model.ProductPageDto;
 import dev.michaelgoldman.catalog.api.model.ProductRequestDto;
 import dev.michaelgoldman.catalog.application.ProductService;
 import dev.michaelgoldman.catalog.application.UpsertResult;
+import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,8 +22,8 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
-    public ResponseEntity<ProductDto> getProduct(String sku) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    public ResponseEntity<ProductDto> getProduct(String sku) throws ProductNotFoundException {
+            return ResponseEntity.ok().body(productWebMapper.toDto(productService.get(sku)));
     }
 
     @Override

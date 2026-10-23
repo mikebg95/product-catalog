@@ -16,7 +16,10 @@ paths:
     get:
       tags: [Products]
       operationId: listProducts
-      summary: List products, one page at a time
+      summary: List or search products, one page at a time
+      description: |
+        Without `q`: all products, sorted by SKU.
+        With `q`: only the products that match, best match first.
       parameters:
         - name: page
           in: query
@@ -33,6 +36,16 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: q
+          in: query
+          description: |
+            Search words. Searches all product characteristics (name, brand, category,
+            description, SKU, attributes). Partial words are fine ("sho" finds "shoe"),
+            and a product must contain all words. Empty or left out: no search.
+          schema:
+            type: string
+            maxLength: 100
+          example: red sho
       responses:
         '200':
           description: One page of products

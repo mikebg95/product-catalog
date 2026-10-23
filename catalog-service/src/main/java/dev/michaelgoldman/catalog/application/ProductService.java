@@ -6,6 +6,7 @@ import dev.michaelgoldman.catalog.domain.Product;
 import java.util.Optional;
 
 import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,5 +48,12 @@ public class ProductService {
 
     public ProductPage list(int page, int size) {
         return repository.findPage(page, size);
+    }
+
+    public ProductPage search(@Nullable String q, int page, int size) {
+        if (q == null || q.isBlank()) {
+            return list(page, size);
+        }
+        return repository.search(q, page, size);
     }
 }

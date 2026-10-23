@@ -74,6 +74,15 @@ class ProductServiceTest {
         return new UpsertProductCommand(SKU, name, null, null, null, Map.of());
     }
 
+    @Test
+    void search_whenQueryIsEmpty_returnsNormalList() {
+        saveProducts("C", "A", "B");
+
+        ProductPage page = service.search(" ", 0, 20);
+
+        assertThat(page.products()).extracting(Product::getSku).containsExactly("A", "B", "C");
+    }
+
     // saves them as C, A, B, so the test checks that list sorts them to A, B, C
     private void saveProducts(String... skus) {
         for (String sku : skus) {

@@ -10,8 +10,11 @@ async function failure(res: Response): Promise<Error> {
   return new Error(problem?.detail ?? problem?.title ?? `catalog-service answered ${res.status}`)
 }
 
-export async function listProducts(page: number, size: number): Promise<ProductPage> {
-  const res = await fetch(`/api/products?page=${page}&size=${size}`)
+// With q: only the products that match, best match first. Without: all products, sorted by SKU.
+export async function listProducts(page: number, size: number, q = '', signal?: AbortSignal): Promise<ProductPage> {
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  if (q) params.set('q', q)
+  const res = await fetch(`/api/products?${params}`, { signal })
   if (!res.ok) throw await failure(res)
   return res.json()
 }

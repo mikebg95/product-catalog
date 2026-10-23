@@ -12,7 +12,7 @@ import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
 @Component
-class ProductWebMapper {
+public class ProductWebMapper {
 
     UpsertProductCommand toCommand(String sku, ProductRequestDto request) {
         return new UpsertProductCommand(sku, request.getName(), request.getDescription(), request.getBrand(),

@@ -44,4 +44,8 @@ public class ProductService {
         }
         return optional.get();
     }
+
+    public ProductPage list(int page, int size) {
+        return repository.findPage(page, size);
+    }
 }

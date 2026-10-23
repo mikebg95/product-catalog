@@ -50,7 +50,34 @@ class ProductServiceTest {
                 .isInstanceOf(ProductNotFoundException.class);
     }
 
+    @Test
+    void list_returnsAtMostSizeProductsSortedBySku() {
+        saveProducts("C", "A", "B");
+
+        ProductPage page = service.list(0, 2);
+
+        assertThat(page.products()).extracting(Product::getSku).containsExactly("A", "B");
+        assertThat(page.totalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void list_pagePastTheEnd_isEmpty() {
+        saveProducts("C", "A", "B");
+
+        ProductPage page = service.list(5, 2);
+
+        assertThat(page.products()).isEmpty();
+        assertThat(page.totalElements()).isEqualTo(3);
+    }
+
     private static UpsertProductCommand command(String name) {
         return new UpsertProductCommand(SKU, name, null, null, null, Map.of());
+    }
+
+    // saves them as C, A, B, so the test checks that list sorts them to A, B, C
+    private void saveProducts(String... skus) {
+        for (String sku : skus) {
+            repository.save(Product.create(sku, "Product " + sku, null, null, null, Map.of()));
+        }
     }
 }

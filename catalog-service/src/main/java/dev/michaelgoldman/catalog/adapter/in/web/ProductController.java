@@ -28,7 +28,7 @@ public class ProductController implements ProductsApi {
 
     @Override
     public ResponseEntity<ProductPageDto> listProducts(Integer page, Integer size) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        return ResponseEntity.ok(productWebMapper.toPageDto(productService.list(page, size)));
     }
 
     @Override

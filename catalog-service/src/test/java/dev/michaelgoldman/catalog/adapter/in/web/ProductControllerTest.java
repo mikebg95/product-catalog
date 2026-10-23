@@ -8,10 +8,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.michaelgoldman.catalog.application.ProductPage;
 import dev.michaelgoldman.catalog.application.ProductService;
 import dev.michaelgoldman.catalog.application.UpsertResult;
 import dev.michaelgoldman.catalog.domain.Product;
 
+import java.util.List;
 import java.util.Map;
 
 import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
@@ -81,6 +83,18 @@ class ProductControllerTest {
 
         mockMvc.perform(get("/products/{sku}", SKU))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listProducts_returnsOnePage() throws Exception {
+        // no page or size in the url, so the contract's defaults apply: page 0, size 20
+        when(productService.list(0, 20)).thenReturn(new ProductPage(List.of(product()), 0, 20, 1));
+
+        mockMvc.perform(get("/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].sku").value(SKU))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     private static Product product() {

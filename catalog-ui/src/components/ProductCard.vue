@@ -17,7 +17,7 @@ watch(price, () => {
 </script>
 
 <template>
-  <article class="card product">
+  <a class="card product" :href="`#/products/${encodeURIComponent(product.sku)}`">
     <div class="product-top">
       <span class="product-brand">{{ product.brand }}</span>
       <span v-if="product.category" class="chip chip-accent">{{ product.category }}</span>
@@ -34,11 +34,11 @@ watch(price, () => {
       <span v-if="price" class="product-price" :class="{ flash }" @animationend="flash = false">{{ price }}</span>
       <span v-else class="product-price pending">Price pending</span>
     </div>
-  </article>
+  </a>
 </template>
 
 <style scoped>
-.product { padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.15s, box-shadow 0.15s; }
+.product { padding: 20px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.15s, box-shadow 0.15s; color: inherit; text-decoration: none; cursor: pointer; }
 .product:hover { transform: translateY(-2px); box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 12%, transparent); }
 .product-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 24px; }
 .product-brand { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }

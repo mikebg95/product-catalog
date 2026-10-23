@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -63,7 +64,19 @@ class ProductControllerTest {
     @Test
     void upsertProduct_missingName_returns400() throws Exception {
         mockMvc.perform(put("/products/{sku}", SKU).contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                // same error format as the contract promises (Problem, RFC 9457)
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+
+        verifyNoInteractions(productService);
+    }
+
+    @Test
+    void upsertProduct_invalidSku_returns400() throws Exception {
+        // an underscore isn't allowed in a sku (contract pattern)
+        mockMvc.perform(put("/products/{sku}", "BAD_SKU").contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
 
         verifyNoInteractions(productService);
     }

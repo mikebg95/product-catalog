@@ -4,6 +4,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  mvc:
+    problemdetails:
+      # spring's own errors (like 400 from validation) also use the problem format, like the 404
+      enabled: true
   jackson:
     # leave out empty fields, so a product without a price has no price field
     default-property-inclusion: non_null

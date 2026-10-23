@@ -6,7 +6,7 @@ import dev.michaelgoldman.catalog.domain.Product;
 import java.util.Optional;
 
 import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

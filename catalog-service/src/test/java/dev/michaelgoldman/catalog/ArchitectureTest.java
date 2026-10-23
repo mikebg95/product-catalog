@@ -17,12 +17,13 @@ class ArchitectureTest {
 		.that().resideInAPackage("..catalog.domain..")
 		.should().onlyDependOnClassesThat().resideInAnyPackage("java..", "..catalog.domain..");
 
-	// application may only use java, the domain, its own ports, and @Service / @Transactional
+	// application may only use java, the domain, its own ports, @Service / @Transactional, and jspecify @Nullable
 	@ArchTest
 	static final ArchRule applicationOnlyUsesDomainAndSpringAnnotations = classes()
 		.that().resideInAPackage("..catalog.application..")
 		.should().onlyDependOnClassesThat().resideInAnyPackage("java..", "..catalog.domain..", "..catalog.application..",
-				"org.springframework.stereotype..", "org.springframework.transaction.annotation..");
+				"org.springframework.stereotype..", "org.springframework.transaction.annotation..",
+				"org.jspecify.annotations..");
 
 	@ArchTest
 	static final ArchRule coreDoesNotKnowAdapters = noClasses()

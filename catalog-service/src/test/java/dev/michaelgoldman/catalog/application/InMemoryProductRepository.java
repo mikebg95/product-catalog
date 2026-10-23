@@ -3,7 +3,9 @@ package dev.michaelgoldman.catalog.application;
 import dev.michaelgoldman.catalog.application.port.ProductRepository;
 import dev.michaelgoldman.catalog.domain.Product;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -18,6 +20,17 @@ public class InMemoryProductRepository implements ProductRepository {
     @Override
     public void save(Product product) {
         products.put(product.getSku(), copy(product));
+    }
+
+    @Override
+    public ProductPage findPage(int page, int size) {
+        List<Product> pageOfProducts = products.values().stream()
+                .sorted(Comparator.comparing(Product::getSku)) // sort by SKU
+                .skip((long) page * size) // skip the earlier pages
+                .limit(size) // take at most size
+                .map(InMemoryProductRepository::copy) // makes copy of each product before handing it out
+                .toList();
+        return new ProductPage(pageOfProducts, page, size, products.size());
     }
 
     // stores and hands out copies

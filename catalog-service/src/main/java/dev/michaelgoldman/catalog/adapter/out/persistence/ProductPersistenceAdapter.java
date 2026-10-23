@@ -1,9 +1,14 @@
 package dev.michaelgoldman.catalog.adapter.out.persistence;
 
+import dev.michaelgoldman.catalog.application.ProductPage;
 import dev.michaelgoldman.catalog.application.port.ProductRepository;
 import dev.michaelgoldman.catalog.domain.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -29,5 +34,13 @@ class ProductPersistenceAdapter implements ProductRepository {
         }
 
         productJpaRepository.save(entity);
+    }
+
+    @Override
+    public ProductPage findPage(int page, int size) {
+        Page<ProductEntity> productPage = productJpaRepository.findAll(PageRequest.of(page, size, Sort.by("sku")));
+
+        List<Product> products = productPage.getContent().stream().map(mapper::toDomain).toList();
+        return new ProductPage(products, page, size, productPage.getTotalElements());
     }
 }

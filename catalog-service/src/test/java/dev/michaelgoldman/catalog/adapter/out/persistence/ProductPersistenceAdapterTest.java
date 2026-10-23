@@ -3,6 +3,7 @@ package dev.michaelgoldman.catalog.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.michaelgoldman.catalog.TestcontainersConfiguration;
+import dev.michaelgoldman.catalog.application.ProductPage;
 import dev.michaelgoldman.catalog.domain.Price;
 import dev.michaelgoldman.catalog.domain.Product;
 
@@ -61,6 +62,20 @@ class ProductPersistenceAdapterTest {
     @Test
     void unknownSkuIsEmpty() {
         assertThat(adapter.findBySku("UNKNOWN")).isEmpty();
+    }
+
+    @Test
+    void findPageReturnsOnePageSortedBySku() {
+        // saves them as C, A, B, so the test checks that the database sorts them
+        for (String sku : new String[] { "C", "A", "B" }) {
+            adapter.save(Product.create(sku, "Product " + sku, null, null, null, Map.of()));
+        }
+        clearCache();
+
+        ProductPage page = adapter.findPage(0, 2);
+
+        assertThat(page.products()).extracting(Product::getSku).containsExactly("A", "B");
+        assertThat(page.totalElements()).isEqualTo(3);
     }
 
     // write to the database and empty hibernate's cache, so the next read really comes from the database

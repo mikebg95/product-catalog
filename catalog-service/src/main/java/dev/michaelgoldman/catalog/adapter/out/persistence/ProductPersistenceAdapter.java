@@ -8,8 +8,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 class ProductPersistenceAdapter implements ProductRepository {
@@ -42,5 +44,21 @@ class ProductPersistenceAdapter implements ProductRepository {
 
         List<Product> products = productPage.getContent().stream().map(mapper::toDomain).toList();
         return new ProductPage(products, page, size, productPage.getTotalElements());
+    }
+
+    @Override
+    public ProductPage search(String q, int page, int size) {
+        Page<ProductEntity> productPage = productJpaRepository.search(toPrefixQuery(q), PageRequest.of(page, size));
+
+        List<Product> products = productPage.getContent().stream().map(mapper::toDomain).toList();
+        return new ProductPage(products, page, size, productPage.getTotalElements());
+    }
+
+    // "red sho!" -> "red:* & sho:*"
+    private String toPrefixQuery(String q) {
+        return Arrays.stream(q.replaceAll("[^\\p{L}\\p{N}]", " ").split(" "))
+                .filter(word -> !word.isBlank())
+                .map(word -> word + ":*")
+                .collect(Collectors.joining(" & "));
     }
 }

@@ -78,6 +78,43 @@ class ProductPersistenceAdapterTest {
         assertThat(page.totalElements()).isEqualTo(3);
     }
 
+    @Test
+    void searchFindsProductsWithAllWordsAlsoWhenPartlyTyped() {
+        adapter.save(Product.create("SHOE-RUN-42", "Red running shoes", null, "Nike", "Shoes", Map.of()));
+        adapter.save(Product.create("CAP-RED", "Red cap", null, "Nike", "Caps", Map.of()));
+        adapter.save(Product.create("SHOE-HIKE-40", "Hiking shoes", null, "Salomon", "Shoes", Map.of()));
+        clearCache();
+
+        // "sho" is not finished yet, but still finds "shoes"
+        ProductPage page = adapter.search("red sho", 0, 20);
+
+        assertThat(page.products()).extracting(Product::getSku).containsExactly("SHOE-RUN-42");
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void searchShowsBestMatchFirst() {
+        // the backpack only mentions laptop in its description, the laptop has it in its name
+        adapter.save(Product.create("BAG-01", "Backpack", "Has a laptop sleeve", null, null, Map.of()));
+        adapter.save(Product.create("LAPTOP-14", "Laptop 14 inch", null, null, null, Map.of()));
+        clearCache();
+
+        ProductPage page = adapter.search("laptop", 0, 20);
+
+        assertThat(page.products()).extracting(Product::getSku).containsExactly("LAPTOP-14", "BAG-01");
+    }
+
+    @Test
+    void searchWithOnlySpecialCharactersFindsNothingAndDoesNotFail() {
+        adapter.save(Product.create("CAP-RED", "Red cap", null, null, null, Map.of()));
+        clearCache();
+
+        ProductPage page = adapter.search("!!!", 0, 20);
+
+        assertThat(page.products()).isEmpty();
+        assertThat(page.totalElements()).isZero();
+    }
+
     // write to the database and empty hibernate's cache, so the next read really comes from the database
     private void clearCache() {
         entityManager.flush();

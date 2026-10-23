@@ -33,6 +33,11 @@ public class InMemoryProductRepository implements ProductRepository {
         return new ProductPage(pageOfProducts, page, size, products.size());
     }
 
+    @Override
+    public ProductPage search(String q, int page, int size) {
+        return null;
+    }
+
     // stores and hands out copies
     private static Product copy(Product p) {
         return new Product(p.getSku(), p.getName(), p.getDescription(), p.getBrand(),

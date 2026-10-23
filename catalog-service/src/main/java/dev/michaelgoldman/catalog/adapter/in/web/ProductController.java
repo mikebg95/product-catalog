@@ -7,6 +7,7 @@ import dev.michaelgoldman.catalog.api.model.ProductRequestDto;
 import dev.michaelgoldman.catalog.application.ProductService;
 import dev.michaelgoldman.catalog.application.UpsertResult;
 import dev.michaelgoldman.catalog.domain.ProductNotFoundException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,8 +28,8 @@ public class ProductController implements ProductsApi {
     }
 
     @Override
-    public ResponseEntity<ProductPageDto> listProducts(Integer page, Integer size) {
-        return ResponseEntity.ok(productWebMapper.toPageDto(productService.list(page, size)));
+    public ResponseEntity<ProductPageDto> listProducts(Integer page, Integer size, @Nullable String q) {
+        return ResponseEntity.ok(productWebMapper.toPageDto(productService.search(q, page, size)));
     }
 
     @Override

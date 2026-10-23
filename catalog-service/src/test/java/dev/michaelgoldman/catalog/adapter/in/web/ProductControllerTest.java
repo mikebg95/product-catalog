@@ -101,13 +101,22 @@ class ProductControllerTest {
     @Test
     void listProducts_returnsOnePage() throws Exception {
         // no page or size in the url, so the contract's defaults apply: page 0, size 20
-        when(productService.list(0, 20)).thenReturn(new ProductPage(List.of(product()), 0, 20, 1));
+        when(productService.search(null, 0, 20)).thenReturn(new ProductPage(List.of(product()), 0, 20, 1));
 
         mockMvc.perform(get("/products"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].sku").value(SKU))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void listProducts_withQ_searches() throws Exception {
+        when(productService.search("red sho", 0, 20)).thenReturn(new ProductPage(List.of(product()), 0, 20, 1));
+
+        mockMvc.perform(get("/products").param("q", "red sho"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].sku").value(SKU));
     }
 
     private static Product product() {

@@ -116,4 +116,38 @@ class PriceClientAdapterTest {
                 entry("SHOE-RED-42", new Price(new BigDecimal("89.95"), Instant.parse("2026-10-18T12:00:00Z"))));
         priceSystem.verify(2, getRequestedFor(urlEqualTo("/prices")));
     }
+
+    @Test
+    void fetchPrices_oneInvalidPrice_skipsItReturnsTheRest() {
+        priceSystem.stubFor(get("/prices").willReturn(okJson("""
+                { "prices": [
+                    { "sku": "BAG-BLUE-1",
+                      "price": { "amount": 0, "currency": "EUR", "updatedAt": "2026-10-18T14:00:00+02:00" } },
+                    { "sku": "SHOE-RED-42",
+                      "price": { "amount": 89.95, "currency": "EUR", "updatedAt": "2026-10-18T12:00:00Z" } }
+                ] }
+                """)));
+
+        Map<String, Price> prices = adapter.fetchPrices();
+
+        assertThat(prices).containsOnly(
+                entry("SHOE-RED-42", new Price(new BigDecimal("89.95"), Instant.parse("2026-10-18T12:00:00Z"))));
+    }
+
+    @Test
+    void fetchPrices_updatedAtIsMissing_skipsItReturnsTheRest() {
+        priceSystem.stubFor(get("/prices").willReturn(okJson("""
+                { "prices": [
+                    { "sku": "BAG-BLUE-1",
+                      "price": { "amount": 69.96, "currency": "EUR" } },
+                    { "sku": "SHOE-RED-42",
+                      "price": { "amount": 89.95, "currency": "EUR", "updatedAt": "2026-10-18T12:00:00Z" } }
+                ] }
+                """)));
+
+        Map<String, Price> prices = adapter.fetchPrices();
+
+        assertThat(prices).containsOnly(
+                entry("SHOE-RED-42", new Price(new BigDecimal("89.95"), Instant.parse("2026-10-18T12:00:00Z"))));
+    }
 }

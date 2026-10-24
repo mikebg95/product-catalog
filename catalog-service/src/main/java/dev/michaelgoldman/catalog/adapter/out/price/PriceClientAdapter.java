@@ -6,6 +6,8 @@ import dev.michaelgoldman.catalog.domain.Price;
 import dev.michaelgoldman.catalog.priceclient.api.PricesApi;
 import dev.michaelgoldman.catalog.priceclient.model.PriceDto;
 import dev.michaelgoldman.catalog.priceclient.model.SkuPriceDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @Component
 public class PriceClientAdapter implements PriceSource {
+
+    private static final Logger log = LoggerFactory.getLogger(PriceClientAdapter.class);
 
     private final PricesApi pricesApi;
     private final RetryTemplate retryTemplate;
@@ -42,13 +46,23 @@ public class PriceClientAdapter implements PriceSource {
             String sku = price.getSku();
             PriceDto priceDto = price.getPrice();
 
-            result.put(sku, toDomain(priceDto));
+            try {
+                result.put(sku, toDomain(priceDto));
+            }
+            catch (IllegalArgumentException e) {
+                // skip this one, log a warning, continue with the rest
+                log.warn("Skipped invalid price for {}: {}", sku, e.getMessage());
+            }
         }
 
         return result;
     }
 
+    @SuppressWarnings("ConstantConditions") // @Nonnull is only the contract's promise: the external system can still send null
     private Price toDomain(PriceDto dto) {
+        if (dto.getUpdatedAt() == null) {
+            throw new IllegalArgumentException("updatedAt is required");
+        }
         return new Price(dto.getAmount(), dto.getUpdatedAt().toInstant());
     }
 }

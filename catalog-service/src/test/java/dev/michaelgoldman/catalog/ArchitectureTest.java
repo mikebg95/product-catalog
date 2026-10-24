@@ -36,6 +36,11 @@ class ArchitectureTest {
 		.should().dependOnClassesThat().resideInAPackage("..catalog.api..");
 
 	@ArchTest
+	static final ArchRule onlyPriceAdapterUsesGeneratedPriceClient = noClasses()
+		.that().resideOutsideOfPackages("..catalog.adapter.out.price..", "..catalog.priceclient..")
+		.should().dependOnClassesThat().resideInAPackage("..catalog.priceclient..");
+
+	@ArchTest
 	static final ArchRule adaptersDoNotKnowEachOther = slices()
 		.matching("..catalog.adapter.(*).(*)..")
 		.should().notDependOnEachOther()

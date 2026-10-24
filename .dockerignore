@@ -1,4 +1,4 @@
-# Used by builds whose context is the repo root (catalog-ui, fake-pim).
+# Used by builds whose context is the repo root (catalog-ui, fake-pim, fake-price-ui).
 **/node_modules
 **/dist
 **/target

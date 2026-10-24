@@ -5,6 +5,9 @@
   "description": "UI for fake-price-service: change prices live",
   "type": "module",
   "scripts": {
+    "gen:api": "openapi-typescript ../fake-price-service/src/main/resources/openapi/price-api.yaml -o src/api/schema.d.ts",
+    "predev": "npm run gen:api",
+    "prebuild": "npm run gen:api",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
@@ -15,6 +18,7 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "6.0.10",
     "@vue/tsconfig": "0.9.1",
+    "openapi-typescript": "7.13.0",
     "typescript": "5.9.3",
     "vite": "8.3.5",
     "vue-tsc": "3.3.13"

@@ -48,7 +48,9 @@ services:
       - fake-price-service
 
   fake-price-ui:
-    build: ./fake-price-ui
+    build:
+      context: .
+      dockerfile: fake-price-ui/Dockerfile
     ports:
       - "3002:80"
     depends_on:

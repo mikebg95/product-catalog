@@ -5,11 +5,12 @@ import { registerSku } from './api/priceClient'
 import AppHeader from './components/AppHeader.vue'
 import ProductForm from './components/ProductForm.vue'
 import { demoProducts } from './demoProducts'
-import { loadProducts, storeProduct, type PimProduct } from './store'
+import { clearProducts, loadProducts, storeProduct, type PimProduct } from './store'
 
 const products = ref<PimProduct[]>(loadProducts())
 const selected = ref<PimProduct | null>(null)
 const loadingDemo = ref(false)
+const confirmingClear = ref(false)
 const toast = ref<{ text: string; error: boolean } | null>(null)
 let toastTimer: number | undefined
 
@@ -34,6 +35,14 @@ function onFailed(product: PimProduct, message: string) {
   products.value = loadProducts()
   selected.value = product
   notify(`Saved in the PIM, but not sent to the catalog: ${message}`, true)
+}
+
+function clearList() {
+  clearProducts()
+  products.value = []
+  selected.value = null
+  confirmingClear.value = false
+  notify('Cleared the PIM\'s list. The catalog and the price system are untouched (reset those with scripts/reset-demo.sh).')
 }
 
 async function loadDemo() {
@@ -66,6 +75,12 @@ async function loadDemo() {
       <span class="badge">External system · demo</span>
     </template>
     <template #actions>
+      <template v-if="confirmingClear">
+        <span class="confirm-text">Clear this list? Only the PIM's own list, in this browser.</span>
+        <button class="btn btn-danger" @click="clearList">Clear</button>
+        <button class="btn" @click="confirmingClear = false">Cancel</button>
+      </template>
+      <button v-else-if="products.length > 0" class="btn" @click="confirmingClear = true">Clear this list</button>
       <button class="btn" @click="selected = null">New product</button>
       <button class="btn btn-primary" :disabled="loadingDemo" @click="loadDemo">
         {{ loadingDemo ? 'Loading…' : 'Load demo products' }}
@@ -100,6 +115,8 @@ async function loadDemo() {
 </template>
 
 <style scoped>
+.confirm-text { align-self: center; font-size: 13px; font-weight: 600; color: var(--danger); }
+.btn-danger { border: 0; color: #fff; background: var(--danger); }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
 .list { padding: 6px; }
 .list-empty { padding: 20px; color: var(--muted); font-size: 14px; }

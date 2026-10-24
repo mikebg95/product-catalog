@@ -19,9 +19,14 @@ let timer: number | undefined
 // The search lives in the url (#/?q=…), so the browser's back button returns to the same results.
 const query = ref(new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('q') ?? '')
 const searchTerm = computed(() => (query.value.trim().length >= MIN_CHARS ? query.value.trim() : ''))
-// The search the shown products belong to, and how long the backend took.
+// The search the shown products belong to, and how long it took: in the catalog itself, and the full round trip.
 const shownTerm = ref('')
 const tookMs = ref<number | null>(null)
+const searchMs = ref<number | null>(null)
+// The last searches with their times, newest first. Only real searches, not the 3-second refresh.
+type Timed = { term: string; total: number; searchMs: number | null; tookMs: number }
+const recent = ref<Timed[]>([])
+let recordNext = false
 let inFlight: AbortController | null = null
 let debounce: number | undefined
 
@@ -33,11 +38,16 @@ async function refresh() {
   const term = searchTerm.value
   const started = performance.now()
   try {
-    const page = await listProducts(0, 100, term, request.signal)
+    const { page, searchMs: ms } = await listProducts(0, 100, term, request.signal)
     products.value = page.content
     total.value = page.totalElements
     shownTerm.value = term
     tookMs.value = Math.round(performance.now() - started)
+    searchMs.value = ms
+    if (recordNext && term) {
+      recent.value = [{ term, total: page.totalElements, searchMs: ms, tookMs: tookMs.value }, ...recent.value].slice(0, 6)
+    }
+    recordNext = false
     error.value = null
   } catch (e) {
     if (request.signal.aborted) return
@@ -51,6 +61,7 @@ watch(searchTerm, (term) => {
   window.clearTimeout(debounce)
   debounce = window.setTimeout(() => {
     history.replaceState(null, '', term ? `#/?q=${encodeURIComponent(term)}` : '#/')
+    recordNext = true
     refresh()
   }, DEBOUNCE_MS)
 })
@@ -59,11 +70,12 @@ function clearSearch() {
   query.value = ''
 }
 
+const count = (n: number) => n.toLocaleString('en-US')
 const subtitle = computed(() => {
-  if (!shownTerm.value) return `${total.value} ${total.value === 1 ? 'product' : 'products'}`
-  const took = tookMs.value === null ? '' : ` · ${tookMs.value} ms`
-  return `${total.value} ${total.value === 1 ? 'result' : 'results'} for "${shownTerm.value}"${took}`
+  if (!shownTerm.value) return `${count(total.value)} ${total.value === 1 ? 'product' : 'products'}`
+  return `${count(total.value)} ${total.value === 1 ? 'result' : 'results'} for "${shownTerm.value}"`
 })
+const ms = (value: number | null) => (value === null ? '–' : `${value < 10 ? value.toFixed(1) : Math.round(value)} ms`)
 
 onMounted(() => {
   refresh()
@@ -108,6 +120,21 @@ onUnmounted(() => {
   <main class="page">
     <div v-if="error" class="error-banner">Can't load products: {{ error }}</div>
 
+    <!-- how fast the search is: the requirement is under 1 second -->
+    <div v-if="shownTerm && searchMs !== null" class="timing card">
+      <div class="timing-main">
+        <span class="timing-label">Search time</span>
+        <span class="timing-value" :class="{ slow: searchMs >= 1000 }">{{ ms(searchMs) }}</span>
+        <span class="timing-note">inside the catalog · {{ ms(tookMs) }} round trip · requirement: under 1,000 ms</span>
+      </div>
+      <div v-if="recent.length > 1" class="timing-recent">
+        <span class="timing-label">Recent</span>
+        <span v-for="r in recent" :key="r.term + r.tookMs" class="chip">
+          <strong>{{ r.term }}</strong> · {{ count(r.total) }} · {{ ms(r.searchMs) }}
+        </span>
+      </div>
+    </div>
+
     <div v-if="loaded && !error && products.length === 0 && shownTerm" class="card empty">
       <div class="empty-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -141,6 +168,15 @@ onUnmounted(() => {
 .search-icon { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .search-input { padding-left: 36px; }
 .search-clear { margin-top: 16px; }
+
+.timing { padding: 14px 18px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+.timing-main { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.timing-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.timing-value { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--accent-text); font-variant-numeric: tabular-nums; }
+.timing-value.slow { color: var(--danger); }
+.timing-note { color: var(--muted); font-size: 13px; }
+.timing-recent { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.timing-recent .timing-label { margin-right: 4px; }
 @media (max-width: 640px) {
   .search { width: 100%; }
 }

@@ -11,12 +11,19 @@ async function failure(res: Response): Promise<Error> {
 }
 
 // With q: only the products that match, best match first. Without: all products, sorted by SKU.
-export async function listProducts(page: number, size: number, q = '', signal?: AbortSignal): Promise<ProductPage> {
+// searchMs is how long the search took inside catalog-service (its Server-Timing header), without the network.
+export async function listProducts(
+  page: number,
+  size: number,
+  q = '',
+  signal?: AbortSignal,
+): Promise<{ page: ProductPage; searchMs: number | null }> {
   const params = new URLSearchParams({ page: String(page), size: String(size) })
   if (q) params.set('q', q)
   const res = await fetch(`/api/products?${params}`, { signal })
   if (!res.ok) throw await failure(res)
-  return res.json()
+  const duration = /dur=([\d.]+)/.exec(res.headers.get('Server-Timing') ?? '')
+  return { page: await res.json(), searchMs: duration ? Number(duration[1]) : null }
 }
 
 // null when there is no product with this SKU (404)

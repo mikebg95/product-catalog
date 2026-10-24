@@ -13,6 +13,11 @@ spring:
     default-property-inclusion: non_null
 
 management:
+  endpoints:
+    web:
+      exposure:
+        # metrics: every request's time is recorded, e.g. the slowest search of the demo (http.server.requests)
+        include: health, metrics
   endpoint:
     health:
       probes:

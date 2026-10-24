@@ -34,6 +34,14 @@ public class DemoController {
         return status();
     }
 
+    // for scripts/reset-demo.sh: everything empty and switched on, like a fresh start
+    @PostMapping("/reset")
+    public OutageStatus reset() {
+        store.clear();
+        outageSwitch.turnOn();
+        return status();
+    }
+
     // comes back empty, like a real restart of a system that keeps its data in memory
     @PostMapping("/on")
     public OutageStatus turnOn() {

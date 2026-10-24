@@ -5,7 +5,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -116,7 +118,9 @@ class ProductControllerTest {
 
         mockMvc.perform(get("/products").param("q", "red sho"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].sku").value(SKU));
+                .andExpect(jsonPath("$.content[0].sku").value(SKU))
+                // how long the search took, e.g. "search;dur=12.3"
+                .andExpect(header().string("Server-Timing", matchesPattern("search;dur=\\d+\\.\\d")));
     }
 
     private static Product product() {

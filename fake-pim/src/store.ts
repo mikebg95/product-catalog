@@ -26,3 +26,13 @@ export function storeProduct(product: PimProduct): void {
     // Storage full or blocked: the list just isn't kept after a reload.
   }
 }
+
+// Forgets the PIM's own list (only in this browser). The catalog and the price system are reset
+// with scripts/reset-demo.sh; the PIM can't and shouldn't delete anything there.
+export function clearProducts(): void {
+  try {
+    localStorage.removeItem(KEY)
+  } catch {
+    // Storage blocked: nothing to clear.
+  }
+}

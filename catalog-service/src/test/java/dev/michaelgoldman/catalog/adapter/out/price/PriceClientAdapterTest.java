@@ -31,6 +31,7 @@ class PriceClientAdapterTest {
     // short, so the "too slow" test doesn't wait long
     private static final Duration CONNECT_TIMEOUT = Duration.ofMillis(500);
     private static final Duration READ_TIMEOUT = Duration.ofMillis(500);
+
     // 2 retries = 3 attempts; a tiny pause, so the failing tests stay fast
     private static final int MAX_RETRIES = 2;
     private static final Duration RETRY_DELAY = Duration.ofMillis(10);

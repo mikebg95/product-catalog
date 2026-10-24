@@ -1,0 +1,199 @@
+openapi: 3.1.0
+info:
+  title: Price API
+  version: 0.0.1
+  description: |
+    Price system of an e-commerce shop. It knows SKUs and their prices, no other product data.
+    The PIM registers SKUs, the pricing manager prices them, and the catalog pulls the prices.
+servers:
+  - url: http://localhost:8081
+tags:
+  - name: Prices
+    description: Read and change prices
+  - name: SKUs
+    description: Register and list SKUs
+
+paths:
+  /prices:
+    get:
+      tags: [Prices]
+      operationId: listPrices
+      summary: List all current prices
+      description: |
+        Every SKU that has a price, with its current price. SKUs without a price are left out.
+        Pulled by the catalog every ~10 seconds.
+      responses:
+        '200':
+          description: All current prices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+
+  /prices/{sku}:
+    parameters:
+      - $ref: '#/components/parameters/Sku'
+    put:
+      tags: [Prices]
+      operationId: setPrice
+      summary: Set the price of a SKU
+      description: The price system sets updatedAt to the current time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceRequest'
+      responses:
+        '200':
+          description: Price set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkuPrice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /skus:
+    get:
+      tags: [SKUs]
+      operationId: listSkus
+      summary: List all SKUs, with or without a price
+      responses:
+        '200':
+          description: All SKUs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkuList'
+
+  /skus/{sku}:
+    parameters:
+      - $ref: '#/components/parameters/Sku'
+    put:
+      tags: [SKUs]
+      operationId: registerSku
+      summary: Register a SKU
+      description: |
+        Makes the SKU known, without a price. Registering a SKU that already exists
+        changes nothing, so the PIM can send it again safely.
+      responses:
+        '201':
+          description: New SKU registered
+        '204':
+          description: SKU already registered, nothing changed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  parameters:
+    Sku:
+      name: sku
+      in: path
+      required: true
+      description: Stock keeping unit, the product's unique key
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9-]{1,64}$'
+        example: SHOE-RED-42
+
+  schemas:
+    PriceRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+          description: Greater than 0, at most 2 decimals
+          example: 89.95
+
+    Price:
+      type: object
+      required: [amount, currency, updatedAt]
+      properties:
+        amount:
+          type: number
+          description: Greater than 0, at most 2 decimals
+          example: 89.95
+        currency:
+          type: string
+          enum: [EUR]
+        updatedAt:
+          type: string
+          format: date-time
+          description: When this price was last changed
+          example: '2026-10-18T12:00:00Z'
+
+    SkuPrice:
+      type: object
+      description: A SKU with its current price
+      required: [sku, price]
+      properties:
+        sku:
+          type: string
+          example: SHOE-RED-42
+        price:
+          $ref: '#/components/schemas/Price'
+
+    PriceList:
+      type: object
+      required: [prices]
+      properties:
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkuPrice'
+
+    Sku:
+      type: object
+      description: A registered SKU. The price is left out until it has one.
+      required: [sku]
+      properties:
+        sku:
+          type: string
+          example: SHOE-RED-42
+        price:
+          $ref: '#/components/schemas/Price'
+
+    SkuList:
+      type: object
+      required: [skus]
+      properties:
+        skus:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sku'
+
+    Problem:
+      type: object
+      description: Error response in the standard RFC 9457 format (Spring's ProblemDetail)
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: This SKU is not registered
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

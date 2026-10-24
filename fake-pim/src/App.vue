@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { upsertProduct } from './api/client'
+import { registerSku } from './api/priceClient'
 import AppHeader from './components/AppHeader.vue'
 import ProductForm from './components/ProductForm.vue'
 import { demoProducts } from './demoProducts'
@@ -18,10 +19,15 @@ function notify(text: string, error = false) {
   toastTimer = window.setTimeout(() => (toast.value = null), 3000)
 }
 
-function onSaved(product: PimProduct, created: boolean) {
+function onSaved(product: PimProduct, created: boolean, registered: boolean) {
   products.value = loadProducts()
   selected.value = product
-  notify(`${created ? 'Created' : 'Updated'} ${product.sku} in the catalog`)
+  const action = `${created ? 'Created' : 'Updated'} ${product.sku} in the catalog`
+  if (registered) {
+    notify(`${action} and registered it in the price system`)
+  } else {
+    notify(`${action}, but the price system could not be reached`, true)
+  }
 }
 
 function onFailed(product: PimProduct, message: string) {
@@ -37,8 +43,9 @@ async function loadDemo() {
       storeProduct(product)
       const { sku, ...request } = product
       await upsertProduct(sku, request)
+      await registerSku(sku)
     }
-    notify(`Loaded ${demoProducts.length} demo products and sent them to the catalog`)
+    notify(`Loaded ${demoProducts.length} demo products, sent them to the catalog and registered them in the price system`)
   } catch (e) {
     notify(`Saved in the PIM, but sending failed: ${e instanceof Error ? e.message : e}`, true)
   } finally {
@@ -49,7 +56,7 @@ async function loadDemo() {
 </script>
 
 <template>
-  <AppHeader name="PIM" sub="Product information" title="Products" subtitle="Sent to the catalog with PUT /products/{sku}">
+  <AppHeader name="PIM" sub="Product information" title="Products" subtitle="Sent to the catalog (PUT /products/{sku}) and registered in the price system (PUT /skus/{sku})">
     <template #icon>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" /><path d="m3 8 9 5 9-5" /><path d="M12 13v8" />

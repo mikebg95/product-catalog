@@ -17,5 +17,5 @@ AGENTS.md
 ### Frontends ###
 node_modules/
 dist/
-# generated from catalog-service's OpenAPI contract on every dev run and build
-**/src/api/schema.d.ts
+# generated from the OpenAPI contracts on every dev run and build
+**/src/api/*schema.d.ts

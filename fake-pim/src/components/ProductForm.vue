@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
 import { upsertProduct, type ProductRequest } from '../api/client'
+import { registerSku } from '../api/priceClient'
 import { storeProduct, type PimProduct } from '../store'
 
 // null = a new product
 const props = defineProps<{ product: PimProduct | null }>()
-const emit = defineEmits<{ saved: [product: PimProduct, created: boolean]; failed: [product: PimProduct, message: string] }>()
+const emit = defineEmits<{
+  saved: [product: PimProduct, created: boolean, registered: boolean]
+  failed: [product: PimProduct, message: string]
+}>()
 
 type Row = { key: string; value: string }
 const form = reactive({ sku: '', name: '', brand: '', category: '', description: '', attributes: [] as Row[] })
@@ -48,7 +52,9 @@ async function save() {
   saving.value = true
   try {
     const { created } = await upsertProduct(product.sku, request)
-    emit('saved', product, created)
+    // Then the price system learns the SKU, so it can be priced there. Failing here doesn't undo the catalog.
+    const registered = await registerSku(product.sku).then(() => true, () => false)
+    emit('saved', product, created, registered)
   } catch (e) {
     emit('failed', product, e instanceof Error ? e.message : String(e))
   } finally {

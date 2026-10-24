@@ -1,6 +1,9 @@
 spring:
   application:
     name: fake-price-service
+  jackson:
+    # leave out empty fields, so a sku without a price has no price field (like the contract says)
+    default-property-inclusion: non_null
 
 management:
   endpoint:

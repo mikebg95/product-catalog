@@ -20,7 +20,7 @@ public class PriceSyncScheduler {
         this.priceSyncService = priceSyncService;
     }
 
-    @Scheduled(fixedDelay = 10_000)
+    @Scheduled(fixedDelayString = "${price-sync.interval}")
     public void syncPrices() {
         try {
             priceSyncService.syncPrices();

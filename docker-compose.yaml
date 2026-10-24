@@ -12,6 +12,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-catalog}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-catalog}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-catalog}
+      PRICE_SYSTEM_BASE_URL: http://fake-price-service:8080
     depends_on:
       postgres:
         condition: service_healthy

@@ -2,6 +2,7 @@ package dev.michaelgoldman.catalog.adapter.out.price;
 
 import dev.michaelgoldman.catalog.priceclient.ApiClient;
 import dev.michaelgoldman.catalog.priceclient.api.PricesApi;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.retry.RetryPolicy;
@@ -14,16 +15,17 @@ import org.springframework.web.client.RestClient;
 import java.time.Duration;
 
 @Configuration
+@EnableConfigurationProperties(PriceSystemProperties.class)
 public class PriceClientConfig {
 
     @Bean
-    PricesApi pricesApi() {
-        return createPricesApi("http://localhost:8081", Duration.ofSeconds(2), Duration.ofSeconds(5));
+    PricesApi pricesApi(PriceSystemProperties properties) {
+        return createPricesApi(properties.baseUrl(), properties.connectTimeout(), properties.readTimeout());
     }
 
     @Bean
-    RetryTemplate priceRetryTemplate() {
-        return createRetryTemplate(2, Duration.ofMillis(500));
+    RetryTemplate priceRetryTemplate(PriceSystemProperties properties) {
+        return createRetryTemplate(properties.maxRetries(), properties.retryDelay());
     }
 
     // used by the bean above and by the test, so both build the client the same way

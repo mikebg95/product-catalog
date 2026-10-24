@@ -6,8 +6,9 @@ import dev.michaelgoldman.catalog.domain.Price;
 import dev.michaelgoldman.catalog.priceclient.api.PricesApi;
 import dev.michaelgoldman.catalog.priceclient.model.PriceDto;
 import dev.michaelgoldman.catalog.priceclient.model.SkuPriceDto;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClientException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,20 +18,23 @@ import java.util.Map;
 public class PriceClientAdapter implements PriceSource {
 
     private final PricesApi pricesApi;
+    private final RetryTemplate retryTemplate;
 
-    public PriceClientAdapter(PricesApi pricesApi) {
+    public PriceClientAdapter(PricesApi pricesApi, RetryTemplate retryTemplate) {
         this.pricesApi = pricesApi;
+        this.retryTemplate = retryTemplate;
     }
 
     @Override
     public Map<String, Price> fetchPrices() {
         List<SkuPriceDto> prices;
         try {
-            prices = pricesApi.listPrices().getPrices();
+            // tries again on a temporary failure; which ones and how often is set in PriceClientConfig
+            prices = retryTemplate.execute(() -> pricesApi.listPrices().getPrices());
         }
-        // error answer (4xx/5xx) as well as not reachable or too slow
-        catch (RestClientException e) {
-            throw new PriceSourceUnavailableException("Could not fetch prices from the price system.", e);
+        // given up: every try failed, or the failure was not worth retrying (4xx)
+        catch (RetryException e) {
+            throw new PriceSourceUnavailableException("Could not fetch prices from the price system.", e.getLastException());
         }
 
         Map<String, Price> result = new HashMap<>();

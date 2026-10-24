@@ -29,3 +29,25 @@ export async function setPrice(sku: string, amount: number): Promise<SkuPrice> {
   if (!res.ok) throw await failure(res)
   return res.json()
 }
+
+// Demo only, not part of price-api.yaml: turn the price api off and on, for the outage demo.
+export type OutageStatus = { down: boolean; downSince: string | null }
+
+export async function outageStatus(): Promise<OutageStatus> {
+  const res = await fetch('/api/demo/outage')
+  if (!res.ok) throw await failure(res)
+  return res.json()
+}
+
+export async function turnOff(): Promise<OutageStatus> {
+  const res = await fetch('/api/demo/outage/off', { method: 'POST' })
+  if (!res.ok) throw await failure(res)
+  return res.json()
+}
+
+// Comes back empty, like a real restart of a system that keeps its data in memory.
+export async function turnOn(): Promise<OutageStatus> {
+  const res = await fetch('/api/demo/outage/on', { method: 'POST' })
+  if (!res.ok) throw await failure(res)
+  return res.json()
+}

@@ -35,4 +35,10 @@ public class PriceStore {
     public Map<String, StoredPrice> getStoredPrices() {
         return prices;
     }
+
+    // forgets everything, like a restart does to data kept in memory
+    public void clear() {
+        registeredSkus.clear();
+        prices.clear();
+    }
 }

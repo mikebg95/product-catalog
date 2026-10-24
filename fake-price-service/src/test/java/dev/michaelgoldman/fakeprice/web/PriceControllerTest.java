@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.michaelgoldman.fakeprice.demo.OutageSwitch;
 import dev.michaelgoldman.fakeprice.store.PriceStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(PriceController.class)
-@Import(PriceStore.class)
+@Import({PriceStore.class, OutageSwitch.class})
 class PriceControllerTest {
 
     private static final String PRICE_BODY = """

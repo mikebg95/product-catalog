@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { listSkus, setPrice, type Sku } from './api/client'
+import { listSkus, outageStatus, setPrice, turnOff, turnOn, type OutageStatus, type Sku } from './api/client'
 import AppHeader from './components/AppHeader.vue'
 
 const REFRESH_MS = 3000
@@ -15,6 +15,11 @@ const saving = ref<string | null>(null)
 const justSaved = ref<string | null>(null)
 const now = ref(Date.now())
 const toast = ref<{ text: string; error: boolean } | null>(null)
+// the outage demo: off = the price api answers 503; on = it works again, and is empty like after a restart
+const outage = ref<OutageStatus>({ down: false, downSince: null })
+const confirmingOff = ref(false)
+const switching = ref(false)
+const cameBackEmpty = ref(false)
 let toastTimer: number | undefined
 let refreshTimer: number | undefined
 let clockTimer: number | undefined
@@ -34,13 +39,51 @@ function notify(text: string, isError = false) {
 
 async function refresh() {
   try {
+    outage.value = await outageStatus()
+    if (outage.value.down) {
+      error.value = null
+      return
+    }
     skus.value = await listSkus()
+    if (skus.value.length > 0) cameBackEmpty.value = false
     error.value = null
   } catch (e) {
     error.value = `fake-price-service can't be reached: ${e instanceof Error ? e.message : e}`
   } finally {
     loaded.value = true
   }
+}
+
+async function switchOff() {
+  switching.value = true
+  try {
+    outage.value = await turnOff()
+    confirmingOff.value = false
+    cameBackEmpty.value = false
+  } catch (e) {
+    notify(`Could not turn it off: ${e instanceof Error ? e.message : e}`, true)
+  } finally {
+    switching.value = false
+  }
+}
+
+async function switchOn() {
+  switching.value = true
+  try {
+    outage.value = await turnOn()
+    cameBackEmpty.value = true
+    await refresh()
+  } catch (e) {
+    notify(`Could not turn it on: ${e instanceof Error ? e.message : e}`, true)
+  } finally {
+    switching.value = false
+  }
+}
+
+function downFor() {
+  if (!outage.value.downSince) return ''
+  const seconds = Math.max(0, Math.round((now.value - new Date(outage.value.downSince).getTime()) / 1000))
+  return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`
 }
 
 async function save(sku: string) {
@@ -98,12 +141,41 @@ onUnmounted(() => {
     <template #badge>
       <span class="badge">External system · demo</span>
     </template>
+    <template #actions>
+      <template v-if="outage.down">
+        <button class="btn btn-primary" :disabled="switching" @click="switchOn">Turn the price system back on</button>
+      </template>
+      <template v-else-if="confirmingOff">
+        <span class="confirm-text">Turn it off? When it comes back, all prices are gone.</span>
+        <button class="btn btn-danger" :disabled="switching" @click="switchOff">Turn off</button>
+        <button class="btn" @click="confirmingOff = false">Cancel</button>
+      </template>
+      <button v-else class="btn" @click="confirmingOff = true">Turn the price system off</button>
+    </template>
   </AppHeader>
 
   <main class="page">
     <div v-if="error" class="error-banner">{{ error }}</div>
 
-    <div v-if="loaded && skus.length > 0" class="toolbar">
+    <div v-if="outage.down" class="outage-banner">
+      <span class="outage-dot"></span>
+      <div>
+        <p class="outage-title">The price system is off · {{ downFor() }}</p>
+        <p>
+          It answers every request with <code>503 Service Unavailable</code>. The catalog's sync fails each round,
+          logs a warning and keeps its last known prices: check the shop. Turn it back on when you're ready.
+        </p>
+      </div>
+    </div>
+    <div v-else-if="cameBackEmpty" class="back-banner">
+      <p class="outage-title">The price system is back on, and empty</p>
+      <p>
+        It kept everything in memory, so all SKUs and prices are gone, like after a real restart. The shop still shows
+        its prices. Load the demo products in fake-pim again to register the SKUs, then price them here.
+      </p>
+    </div>
+
+    <div v-if="loaded && skus.length > 0 && !outage.down" class="toolbar">
       <input v-model="filter" class="input search" type="search" placeholder="Filter by SKU" aria-label="Filter by SKU" />
       <div class="chips">
         <span class="chip"><strong>{{ skus.length }}</strong> SKUs</span>
@@ -112,7 +184,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="loaded && skus.length === 0 && !error" class="card empty">
+    <div v-if="loaded && skus.length === 0 && !error && !outage.down" class="card empty">
       <div class="empty-icon">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="8" cy="8" r="1.5" />
@@ -122,7 +194,7 @@ onUnmounted(() => {
       <p>Add products in fake-pim, or load its demo products. Their SKUs show up here by themselves.</p>
     </div>
 
-    <div v-else-if="skus.length > 0" class="card list">
+    <div v-else-if="skus.length > 0" class="card list" :class="{ dimmed: outage.down }">
       <div class="list-head">
         <span>SKU</span><span>Current price</span><span>Last changed</span><span>New price</span>
       </div>
@@ -202,6 +274,37 @@ onUnmounted(() => {
 .currency { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .money .input { padding-left: 26px; }
 .no-match { padding: 20px; text-align: center; color: var(--muted); }
+.dimmed { opacity: 0.35; pointer-events: none; }
+
+.confirm-text { align-self: center; font-size: 13px; font-weight: 600; color: var(--danger); }
+.btn-danger { border: 0; color: #fff; background: var(--danger); }
+
+.outage-banner, .back-banner {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+.outage-banner { border-left: 4px solid var(--danger); }
+.back-banner { display: block; border-left: 4px solid var(--accent); }
+.outage-title { font-weight: 700; margin-bottom: 4px; }
+.outage-banner code { font-size: 12px; }
+.outage-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 50% { opacity: 0.25; } }
 
 @media (max-width: 760px) {
   .list-head { display: none; }

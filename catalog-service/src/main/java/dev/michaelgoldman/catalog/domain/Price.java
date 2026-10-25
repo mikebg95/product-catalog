@@ -2,6 +2,7 @@ package dev.michaelgoldman.catalog.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public record Price(BigDecimal amount, Instant updatedAt) {
 
@@ -19,9 +20,13 @@ public record Price(BigDecimal amount, Instant updatedAt) {
 			throw new IllegalArgumentException("amount must have at most 2 decimals");
 		}
 		amount = amount.setScale(2);
+
+		// postgres only stores microseconds: drop nanos, or a saved price looks older than the same incoming price
+		updatedAt = updatedAt.truncatedTo(ChronoUnit.MICROS);
 	}
 
 	public boolean isNewerThan(Price other) {
+
 		return updatedAt.isAfter(other.updatedAt);
 	}
 

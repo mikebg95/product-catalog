@@ -47,4 +47,11 @@ class PriceTest {
 		assertThat(sameTime.isNewerThan(current)).isFalse();
 	}
 
+	@Test
+	void isNewerThan_ignoresDifferenceBelowMicroseconds() {
+		Price stored = new Price(new BigDecimal("19.99"), NOW);
+		Price incoming = new Price(new BigDecimal("19.99"), NOW.plusNanos(123));
+
+		assertThat(incoming.isNewerThan(stored)).isFalse();
+	}
 }

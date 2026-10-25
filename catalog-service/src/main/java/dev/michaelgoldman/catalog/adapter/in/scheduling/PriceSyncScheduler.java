@@ -2,6 +2,7 @@ package dev.michaelgoldman.catalog.adapter.in.scheduling;
 
 import dev.michaelgoldman.catalog.application.PriceSyncService;
 import dev.michaelgoldman.catalog.application.port.PriceSourceUnavailableException;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ public class PriceSyncScheduler {
     }
 
     @Scheduled(fixedDelayString = "${price-sync.interval}")
+    @SchedulerLock(name = "priceSync", lockAtLeastFor = "${price-sync.lock-at-least-for}")
     public void syncPrices() {
         try {
             priceSyncService.syncPrices();

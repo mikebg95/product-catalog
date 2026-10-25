@@ -32,3 +32,5 @@ price-system:
 
 price-sync:
   interval: 10s
+  lock-at-most-for: 1m
+  lock-at-least-for: 9s

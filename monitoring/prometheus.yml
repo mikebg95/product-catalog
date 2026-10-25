@@ -1,0 +1,14 @@
+# collects the numbers from both catalog-service copies
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: catalog-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['catalog-service:8080']
+        labels:
+          copy: '1'
+      - targets: ['catalog-service-2:8080']
+        labels:
+          copy: '2'

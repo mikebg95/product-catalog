@@ -1,0 +1,7 @@
+# grafana loads the dashboards in this folder at startup
+apiVersion: 1
+providers:
+  - name: catalog
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

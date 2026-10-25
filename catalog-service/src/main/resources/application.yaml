@@ -17,11 +17,16 @@ management:
     web:
       exposure:
         # metrics: every request's time is recorded, e.g. the slowest search of the demo (http.server.requests)
-        include: health, metrics
+        include: health, metrics, prometheus
   endpoint:
     health:
       probes:
         enabled: true
+  metrics:
+    distribution:
+      # time buckets for requests, so grafana can show "95% of requests faster than ..."
+      percentiles-histogram:
+        http.server.requests: true
 
 price-system:
   base-url: http://localhost:8081

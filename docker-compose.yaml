@@ -1,5 +1,5 @@
 services:
-  catalog-service:
+  catalog-service: &catalog-service
     build: ./catalog-service
     ports:
       - "8080:8080"
@@ -16,6 +16,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  # a second copy, like in production; shedlock makes sure only one of them runs the price sync
+  catalog-service-2:
+    <<: *catalog-service
+    ports: []
 
   fake-price-service:
     build: ./fake-price-service

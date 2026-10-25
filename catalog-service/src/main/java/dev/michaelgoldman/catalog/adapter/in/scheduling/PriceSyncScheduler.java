@@ -24,6 +24,7 @@ public class PriceSyncScheduler {
     public void syncPrices() {
         try {
             priceSyncService.syncPrices();
+            log.info("Price sync done");
         }
         catch (PriceSourceUnavailableException e) {
             log.warn("Price sync skipped this round: {} ({})", e.getMessage(), String.valueOf(e.getCause()));

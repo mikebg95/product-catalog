@@ -28,6 +28,7 @@ class SearchUsesIndexTest {
     private static final String INDEX = "products_search_vector_idx";
     // "trail runner", the way the adapter turns it into a search instruction
     private static final String SEARCH = "'trail:* & runner:*'";
+    private static final String SKU_SEARCH = "'TRAIL RUNNER'";
 
     @Autowired
     EntityManager entityManager;
@@ -62,12 +63,12 @@ class SearchUsesIndexTest {
     }
 
     private static Query searchQuery() throws NoSuchMethodException {
-        return ProductJpaRepository.class.getMethod("search", String.class, Pageable.class).getAnnotation(Query.class);
+        return ProductJpaRepository.class.getMethod("search", String.class, String.class, Pageable.class).getAnnotation(Query.class);
     }
 
     private String explain(String sql) {
         @SuppressWarnings("unchecked")
-        List<String> lines = entityManager.createNativeQuery("EXPLAIN " + sql.replace(":query", SEARCH)).getResultList();
+        List<String> lines = entityManager.createNativeQuery("EXPLAIN " + sql.replace(":query", SEARCH).replace(":sku", SKU_SEARCH)).getResultList();
         return lines.stream().collect(Collectors.joining("\n"));
     }
 }

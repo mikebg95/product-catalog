@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ class ProductPersistenceAdapter implements ProductRepository {
 
     @Override
     public ProductPage search(String q, int page, int size) {
-        Page<ProductEntity> productPage = productJpaRepository.search(toPrefixQuery(q), PageRequest.of(page, size));
+        Page<ProductEntity> productPage = productJpaRepository.search(toPrefixQuery(q), q.trim().toUpperCase(Locale.ROOT), PageRequest.of(page, size));
 
         List<Product> products = productPage.getContent().stream().map(mapper::toDomain).toList();
         return new ProductPage(products, page, size, productPage.getTotalElements());

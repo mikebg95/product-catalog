@@ -93,6 +93,19 @@ class ProductPersistenceAdapterTest {
     }
 
     @Test
+    void searchFindsProductByItsFullSku() {
+        // postgres reads "-0000042" as a negative number, so full-text search alone misses this sku
+        adapter.save(Product.create("GEN-0000042", "Product 42", null, null, null, Map.of()));
+        adapter.save(Product.create("GEN-0000043", "Product 43", null, null, null, Map.of()));
+        clearCache();
+
+        ProductPage page = adapter.search("GEN-0000042", 0, 20);
+
+        assertThat(page.products()).extracting(Product::getSku).containsExactly("GEN-0000042");
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    @Test
     void searchShowsBestMatchFirst() {
         // the backpack only mentions laptop in its description, the laptop has it in its name
         adapter.save(Product.create("BAG-01", "Backpack", "Has a laptop sleeve", null, null, Map.of()));

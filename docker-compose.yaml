@@ -11,6 +11,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-catalog}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-catalog}
+      # demo only: if no password is set, it uses "catalog". in production the password is never in this file
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-catalog}
       PRICE_SYSTEM_BASE_URL: http://fake-price-service:8080
     depends_on:
@@ -90,6 +91,7 @@ services:
 
   postgres:
     image: postgres:18-alpine
+    # demo only: same fallback password "catalog" as above
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-catalog}
       POSTGRES_USER: ${POSTGRES_USER:-catalog}

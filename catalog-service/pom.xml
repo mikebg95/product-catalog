@@ -205,6 +205,31 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<!-- serves our own contract at /openapi/catalog-api.yaml, so swagger ui shows it (no second copy in the repo) -->
+					<execution>
+						<id>copy-catalog-api-to-static</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/static/openapi</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/src/main/resources/openapi</directory>
+									<includes>
+										<include>catalog-api.yaml</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>${jacoco.version}</version>

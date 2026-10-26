@@ -12,6 +12,14 @@ spring:
     # leave out empty fields, so a product without a price has no price field
     default-property-inclusion: non_null
 
+springdoc:
+  api-docs:
+    # must stay on: in springdoc 3 swagger ui switches off without it
+    enabled: true
+  swagger-ui:
+    # copied there by the maven build from src/main/resources/openapi
+    url: /openapi/catalog-api.yaml
+
 management:
   endpoints:
     web:

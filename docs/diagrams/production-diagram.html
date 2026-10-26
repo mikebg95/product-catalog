@@ -1,0 +1,1152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Production View</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --dot: #d9dde3;
+    --text: #1d2330;
+    --muted: #5b6475;
+    --line: #6b7385;
+    --panel: rgba(255, 255, 255, 0.92);
+    --panel-border: #dfe3ea;
+    --active: #1168bd;
+    --person: #08427b;
+    --ours: #438dd5;
+    --other: #8a8f98;
+    --infra: #4b5a70;
+    --zone: #8a8f98;
+    --zone-ours: #1168bd;
+    --zone-text: #5d636d;
+    --zone-ours-text: #0b4f94;
+    --on-box: #ffffff;
+    --on-box-muted: rgba(255, 255, 255, 0.8);
+    --card: #ffffff;
+    --card-solid: #ffffff;
+    --chip-bg: #eef1f5;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+    --todo-text: #b45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #13161c;
+      --dot: #262b35;
+      --text: #e7eaf0;
+      --muted: #9aa3b5;
+      --line: #8c95a8;
+      --panel: rgba(28, 32, 40, 0.92);
+      --panel-border: #2d3340;
+      --active: #2a7fd4;
+      --person: #0d4f91;
+      --ours: #3a82c9;
+      --other: #5e636c;
+      --infra: #3d4a5e;
+      --zone: #5e636c;
+      --zone-ours: #2a7fd4;
+      --zone-text: #aab0ba;
+      --zone-ours-text: #8cbcf0;
+      --card: rgba(255, 255, 255, 0.04);
+      --card-solid: #1a1f29;
+      --chip-bg: #262c38;
+      --code-bg: #0b0e14;
+      --todo-text: #fbbf24;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #13161c; --dot: #262b35; --text: #e7eaf0; --muted: #9aa3b5; --line: #8c95a8;
+    --panel: rgba(28, 32, 40, 0.92); --panel-border: #2d3340; --active: #2a7fd4; --person: #0d4f91;
+    --ours: #3a82c9; --other: #5e636c; --infra: #3d4a5e; --zone: #5e636c; --zone-ours: #2a7fd4;
+    --zone-text: #aab0ba; --zone-ours-text: #8cbcf0; --card: rgba(255, 255, 255, 0.04); --card-solid: #1a1f29;
+    --chip-bg: #262c38; --code-bg: #0b0e14; --todo-text: #fbbf24;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text); overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+  [hidden] { display: none !important; }
+
+  #viewport {
+    position: fixed; inset: 0; cursor: grab; touch-action: none;
+    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
+  }
+  #viewport.dragging { cursor: grabbing; }
+  svg { width: 100%; height: 100%; display: block; user-select: none; }
+
+  .panel {
+    position: fixed; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 10px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  header.panel {
+    top: 16px; left: 16px; max-width: calc(100% - 32px); padding: 8px 8px 8px 14px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  }
+  header h1 { margin: 0; font-size: 15px; font-weight: 650; }
+  .hypo {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 6px;
+    color: var(--todo-text); background: rgba(245, 158, 11, 0.16);
+  }
+  .link-btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 650; color: var(--muted); text-decoration: none; background: var(--chip-bg);
+  }
+  .link-btn:hover { color: var(--text); }
+  .sc-btn {
+    display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 8px; padding: 6px 12px 6px 10px;
+    font: inherit; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6 55%, #ec4899);
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35); transition: transform 0.15s;
+  }
+  .sc-btn:hover { transform: translateY(-1px); }
+  .sc-btn[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px #8b5cf6; }
+  .sc-btn svg { width: 12px; height: 12px; fill: currentColor; }
+
+  .toolbar { bottom: 16px; right: 16px; display: flex; align-items: center; padding: 4px; gap: 2px; }
+  .toolbar button {
+    width: 32px; height: 32px; border: 0; border-radius: 7px; background: transparent; color: var(--text);
+    font-size: 18px; line-height: 1; cursor: pointer;
+  }
+  .toolbar button:hover { background: var(--panel-border); }
+  .toolbar button.fit { width: auto; padding: 0 10px; font-size: 12px; font-weight: 600; }
+  .toolbar .zoom { min-width: 46px; text-align: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hint { bottom: 16px; left: 16px; padding: 8px 12px; font-size: 12px; color: var(--muted); max-width: calc(100% - 220px); line-height: 1.5; }
+  .hint strong { color: var(--text); font-weight: 600; }
+  @media (max-width: 560px) { .hint { display: none; } }
+
+  /* diagram */
+  .person { fill: var(--person); }
+  .ours { fill: var(--ours); }
+  .other { fill: var(--other); }
+  .infra { fill: var(--infra); }
+  .name { fill: var(--on-box); font-size: 20px; font-weight: 700; text-anchor: middle; }
+  .kind { fill: var(--on-box-muted); font-size: 12.5px; text-anchor: middle; }
+  .desc { fill: var(--on-box); font-size: 13.5px; text-anchor: middle; }
+  .zone-rect { fill: none; stroke: var(--zone); stroke-width: 2; stroke-dasharray: 10 6; }
+  .zone-rect.ours-zone { stroke: var(--zone-ours); fill: var(--zone-ours); fill-opacity: 0.06; }
+  .zone-name { fill: var(--zone-text); font-size: 15px; font-weight: 700; }
+  .zone-name.ours-zone { fill: var(--zone-ours-text); }
+  .zone-kind { fill: var(--muted); font-size: 12px; }
+  .badge-bg { fill: rgba(0, 0, 0, 0.22); }
+  .badge-bg.good { fill: rgba(34, 197, 94, 0.3); }
+  .badge-bg.key { fill: rgba(250, 204, 21, 0.32); }
+  .badge-text { fill: var(--on-box); font-size: 11px; font-weight: 700; text-anchor: middle; }
+  .dep-frame { fill: var(--ours); fill-opacity: 0.1; stroke: var(--ours); stroke-width: 2.5; }
+  .frame-name { fill: var(--zone-ours-text); font-size: 15px; font-weight: 700; }
+  .frame-kind { fill: var(--muted); font-size: 12px; }
+  .rel { stroke: var(--line); stroke-width: 2; fill: none; stroke-dasharray: 7 5; }
+  .arrowhead { fill: var(--line); }
+  .rel-label { fill: var(--text); font-size: 13.5px; font-weight: 600; }
+  .rel-tech { fill: var(--muted); font-size: 12px; }
+  .rel-label, .rel-tech { paint-order: stroke; stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; }
+  .legend-text { fill: var(--muted); font-size: 13px; }
+  .el { cursor: pointer; }
+  .el .shape { transition: filter 0.15s, stroke 0.2s; }
+  .el:hover .shape { filter: brightness(1.08); }
+
+  /* scenario highlighting */
+  .el, .edge { transition: opacity 0.35s; }
+  #scene.dimmed .el:not(.hl), #scene.dimmed .edge:not(.hl) { opacity: 0.16; }
+  .el.hl .shape { stroke: var(--sc); stroke-width: 4; filter: drop-shadow(0 0 10px var(--sc)); }
+  /* flows: a packet that travels along the arrows, like the C4 model */
+  .trail { fill: none; stroke: var(--sc); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.35; }
+  .trail.now { opacity: 0.95; }
+  .pk-core { fill: var(--kind); stroke: #fff; stroke-width: 3; }
+  .pk-glow { fill: var(--kind); opacity: 0.3; transform-box: fill-box; transform-origin: center; animation: breathe 1.6s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.35); opacity: 0.15; } }
+  #pk-pill { fill: var(--kind); stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.5; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35)); }
+  #pk-text { fill: #0b1220; font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; text-anchor: middle; }
+  #packet { pointer-events: none; transition: opacity 0.25s; }
+  #packet.hidden { opacity: 0; }
+  .spot { fill: none; stroke: var(--sc); stroke-width: 3; rx: 18; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .spot.show { opacity: 0.9; }
+  .fork { display: grid; gap: 8px; margin-top: 12px; }
+  .fork b { font-size: 13px; color: var(--sc); }
+  .fork-opt { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1.5px solid color-mix(in srgb, var(--sc) 55%, transparent); background: color-mix(in srgb, var(--sc) 12%, transparent); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+  .fork-opt:hover, .fork-opt.picked { background: color-mix(in srgb, var(--sc) 30%, transparent); border-color: var(--sc); }
+  .step-list li.pending { opacity: 0.6; font-style: italic; }
+  /* zoomable boxes: the outside texts make room for what's inside */
+  .outer, .inner { transition: opacity 0.35s; }
+  .inner { opacity: 0; pointer-events: none; }
+  .el.open .inner { opacity: 1; }
+  .el.open .outer { opacity: 0; }
+  .el.zoomable:not(.open) .zoom-mark { opacity: 0.8; }
+  .zoom-mark { opacity: 0; fill: var(--on-box-muted); font-size: 11px; transition: opacity 0.35s; }
+  .in-title { fill: var(--on-box); font-size: 9px; font-weight: 700; text-anchor: middle; }
+  .in-sub { fill: var(--on-box-muted); font-size: 5.6px; text-anchor: middle; }
+  .in-card { fill: rgba(255, 255, 255, 0.1); stroke: rgba(255, 255, 255, 0.28); stroke-width: 0.6; transition: stroke 0.2s, fill 0.2s; }
+  .in-name { fill: var(--on-box); font-size: 7px; font-weight: 700; text-anchor: middle; }
+  .in-text { fill: var(--on-box); font-size: 5.6px; }
+  .in-text.mid { text-anchor: middle; }
+  .in-muted { fill: var(--on-box-muted); font-size: 5px; text-anchor: middle; }
+  .in-chip { fill: rgba(0, 0, 0, 0.28); }
+  .in-chip-text { fill: #fde68a; font-size: 5.6px; font-weight: 700; text-anchor: middle; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .in-num { fill: rgba(0, 0, 0, 0.3); }
+  .in-num-text { fill: var(--on-box); font-size: 5px; font-weight: 700; text-anchor: middle; }
+  .inner [data-inner] { transition: opacity 0.35s; }
+  #scene.inner-focus .el.open [data-inner]:not(.ihl) { opacity: 0.35; }
+  [data-inner].ihl .in-card { stroke: var(--sc); stroke-width: 1.4; fill: color-mix(in srgb, var(--sc) 30%, transparent); }
+  .in-ok { fill: #4ade80; font-size: 12px; font-weight: 900; paint-order: stroke; stroke: #14532d; stroke-width: 1.5px; text-anchor: end; opacity: 0; transition: opacity 0.3s; }
+  [data-inner].ihl .in-ok { opacity: 1; }
+  .in-ok.big { font-size: 22px; }
+  .in-arrow { stroke: var(--on-box-muted); stroke-width: 0.8; fill: none; }
+  .in-arrow-head { fill: var(--on-box-muted); }
+  .in-big { font-size: 22px; text-anchor: middle; }
+  .edge.hl .rel { stroke: var(--sc); stroke-width: 3.5; stroke-dasharray: 10 8; animation: march 0.7s linear infinite; }
+  .edge.hl .rel-label { fill: var(--sc); }
+  @keyframes march { to { stroke-dashoffset: -18; } }
+
+  /* side panel */
+  .side {
+    top: 16px; right: 16px; bottom: 72px; width: 400px; z-index: 5; display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); transform: translateX(calc(100% + 32px));
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .side.open { transform: none; }
+  .side-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--panel-border); }
+  .side-head h2 { margin: 0; flex: 1; font-size: 15px; font-weight: 700; }
+  .icon-btn { width: 30px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 15px; cursor: pointer; }
+  .icon-btn:hover { background: var(--panel-border); color: var(--text); }
+  #side-body { flex: 1; overflow: auto; padding: 14px 16px 16px; }
+  .intro { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .sc-card {
+    position: relative; display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 12px 14px 12px 18px;
+    text-align: left; cursor: pointer; overflow: hidden; font: inherit; color: var(--text);
+    background: var(--card); border: 1px solid var(--panel-border); border-radius: 11px; transition: transform 0.15s, border-color 0.15s;
+  }
+  .sc-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--sc); }
+  .sc-card:hover { transform: translateY(-1px); border-color: var(--sc); }
+  .sc-card b { font-size: 14px; }
+  .sc-card span { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+  .progress { display: flex; gap: 4px; margin-bottom: 12px; }
+  .seg { flex: 1; height: 6px; padding: 0; border: 0; border-radius: 3px; background: var(--panel-border); cursor: pointer; }
+  .seg.done { background: color-mix(in srgb, var(--sc) 50%, transparent); }
+  .seg.now { background: var(--sc); box-shadow: 0 0 10px color-mix(in srgb, var(--sc) 60%, transparent); }
+  .step-card { padding: 16px; border-radius: 13px; background: var(--card); border: 1px solid var(--panel-border); border-top: 3px solid var(--sc); animation: card-in 0.35s ease-out; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(6px); } }
+  .step-num { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sc); }
+  .step-card h3 { margin: 4px 0 8px; font-size: 18px; line-height: 1.3; }
+  .step-card p { margin: 0; font-size: 14px; line-height: 1.55; }
+  .step-card code, .d-body code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 1px 5px; border-radius: 5px; background: var(--chip-bg); }
+  .controls { display: flex; gap: 8px; margin: 14px 0; }
+  .ctl {
+    height: 40px; min-width: 44px; padding: 0 12px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 650;
+    color: var(--text); background: var(--card); border: 1px solid var(--panel-border);
+  }
+  .ctl:disabled { opacity: 0.35; cursor: default; }
+  .ctl.primary { flex: 1; color: #fff; border-color: transparent; background: var(--sc); box-shadow: 0 6px 16px color-mix(in srgb, var(--sc) 40%, transparent); }
+  .step-list { list-style: none; margin: 4px 0 0; padding: 0; }
+  .step-list li { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .step-list li:hover { background: var(--chip-bg); }
+  .step-list li span { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; background: var(--chip-bg); }
+  .step-list li.done span { background: color-mix(in srgb, var(--sc) 55%, transparent); color: #fff; }
+  .step-list li.now { background: color-mix(in srgb, var(--sc) 13%, transparent); color: var(--text); font-weight: 600; }
+  .step-list li.now span { background: var(--sc); color: #fff; }
+
+  /* detail card */
+  .detail { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(8, 11, 18, 0); transition: background 0.3s; }
+  .detail.open { background: rgba(8, 11, 18, 0.45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  .detail-card {
+    width: min(680px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--card-solid);
+    border: 1px solid var(--panel-border); border-top: 4px solid var(--sc, var(--active)); border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4); transform: scale(0.04); opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.25, 1), opacity 0.3s;
+  }
+  .detail.open .detail-card { transform: none; opacity: 1; }
+  .d-head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 18px 6px 22px; }
+  .d-head > div { flex: 1; }
+  .d-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--active); }
+  .d-head h2 { margin: 4px 0 2px; font-size: 22px; }
+  .d-body { padding: 6px 22px 22px; font-size: 14px; line-height: 1.55; }
+  .d-body ul { margin: 8px 0; padding-left: 20px; }
+  .d-body li { margin: 4px 0; }
+  .d-h { margin: 16px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .today { margin-top: 14px; padding: 10px 14px; border-radius: 11px; background: var(--chip-bg); }
+  .today b { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .c4-jump {
+    display: flex; width: fit-content; margin-top: 16px; padding: 9px 14px; border-radius: 9px; text-decoration: none;
+    font-size: 13.5px; font-weight: 650; color: #fff; background: var(--active);
+  }
+  .c4-jump:hover { filter: brightness(1.1); }
+  .todo-badge { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 5px; background: #f59e0b; color: #1f1300; }
+
+  @media (max-width: 760px) {
+    .side { left: 16px; right: 16px; width: auto; top: auto; bottom: 16px; height: 52vh; transform: translateY(calc(100% + 32px)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .side, .detail-card, .detail { transition: none; }
+    .edge.hl .rel { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="viewport">
+  <svg aria-label="Hypothetical production deployment of the Product Catalog">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead"/>
+      </marker>
+    </defs>
+    <g id="scene"></g>
+  </svg>
+</div>
+
+<header class="panel">
+  <h1>Product Catalog · Production (simplified)</h1>
+  <span class="hypo" title="This is a target picture, not what exists today">HYPOTHETICAL</span>
+  <a class="link-btn" href="c4-model.html">← C4 model</a>
+  <button id="sc-btn" class="sc-btn" aria-pressed="false" title="Walk through what happens in production (S)">
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z"/></svg>Scenarios
+  </button>
+</header>
+
+<div class="panel hint">
+  Scroll or drag to move · Pinch or ⌘/Ctrl + scroll to zoom<br>
+  <strong id="hint">Click any box for what it is, why it&#39;s there and what the demo does today · ⤢ boxes zoom in</strong>
+</div>
+
+<div class="panel toolbar">
+  <button id="zoom-out" aria-label="Zoom out">−</button>
+  <span class="zoom" id="zoom-level">100%</span>
+  <button id="zoom-in" aria-label="Zoom in">+</button>
+  <button id="fit" class="fit" aria-label="Fit to screen">Fit</button>
+</div>
+
+<aside id="side" class="panel side" aria-label="Scenarios">
+  <div class="side-head">
+    <button id="side-back" class="icon-btn" aria-label="All scenarios" hidden>←</button>
+    <h2 id="side-title">Scenarios</h2>
+    <button id="side-close" class="icon-btn" aria-label="Close">✕</button>
+  </div>
+  <div id="side-body"></div>
+</aside>
+
+<div id="detail" class="detail" hidden>
+  <div id="detail-card" class="detail-card" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <div class="d-head">
+      <div><div id="d-eyebrow" class="d-eyebrow"></div><h2 id="d-title"></h2></div>
+      <button id="d-close" class="icon-btn" aria-label="Close">✕</button>
+    </div>
+    <div id="d-body" class="d-body"></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const $ = (id) => document.getElementById(id);
+    const NS = 'http://www.w3.org/2000/svg';
+    const viewport = $('viewport');
+    const scene = $('scene');
+
+    // ---- the picture ------------------------------------------------------
+    // Same company, different teams: each team deploys its own services, on a shared platform.
+    // Only the Product Catalog (catalog-service + its database) is ours. The PIM, the Webshop and the Price System are other teams' services.
+    const ZONES = [
+      { x: 380, y: 470, w: 800, h: 840, name: 'Our production setup', kind: '[Kubernetes, in the cloud: e.g. AWS EKS or Azure AKS]', ours: true, right: true },
+    ];
+
+    const EL = {
+      pm: { type: 'person', cx: 200, cy: 90, name: 'Product manager', kind: '[Person]', lines: ['Edits products'] },
+      shopper: { type: 'person', cx: 760, cy: 90, name: 'Shopper', kind: '[Person]', lines: ['Browses the shop'] },
+      prm: { type: 'person', cx: 1320, cy: 90, name: 'Pricing manager', kind: '[Person]', lines: ['Sets prices'] },
+      pim: { type: 'box', cls: 'other', x: 60, y: 260, w: 280, h: 140, name: 'PIM', kind: '[other team]', lines: ['owns the product data'] },
+      webshop: { type: 'box', cls: 'other', x: 620, y: 260, w: 280, h: 140, name: 'Webshop', kind: '[other team]', lines: ['the shop'] },
+      priceSys: { type: 'box', cls: 'other', x: 1180, y: 260, w: 280, h: 140, name: 'Price System', kind: '[other team]', lines: ['knows the prices'] },
+      lb: { type: 'box', cls: 'infra', x: 520, y: 510, w: 500, h: 80, name: 'Load balancer', kind: '[Kubernetes Ingress · HTTPS]', lines: [] },
+      // the Deployment is drawn first, so the copies sit on top of it
+      dep: { type: 'frame', x: 470, y: 640, w: 600, h: 260, tx: 788, ty: 662, name: 'Deployment', kind: '[3 copies of image v1.4]' },
+      copy1: { type: 'box', cls: 'ours', x: 500, y: 690, w: 160, h: 180, name: 'catalog-service', kind: '[copy 1 · pod]', lines: [], badges: [['health ✓', 'good']] },
+      copy2: { type: 'box', cls: 'ours', x: 690, y: 690, w: 160, h: 180, name: 'catalog-service', kind: '[copy 2 · pod]', lines: [], badges: [['health ✓', 'good']] },
+      copy3: { type: 'box', cls: 'ours', x: 880, y: 690, w: 160, h: 180, name: 'catalog-service', kind: '[copy 3 · pod]', lines: [], badges: [['health ✓', 'good'], ['🔒 runs the sync', 'key']] },
+      cfg: { type: 'box', cls: 'ours', x: 400, y: 964, w: 140, h: 120, name: 'Settings', kind: '[ConfigMap]', lines: ['→ env vars'] },
+      db: { type: 'cyl', cls: 'ours', x: 560, y: 960, w: 420, h: 150, name: 'PostgreSQL', kind: '[managed by the cloud]', lines: ['with backups'] },
+      sec: { type: 'box', cls: 'ours', x: 1000, y: 964, w: 140, h: 120, name: 'Passwords', kind: '[Secret]', lines: ['→ env vars'] },
+      vault: { type: 'box', cls: 'infra', x: 980, y: 1130, w: 180, h: 100, name: 'Secrets Manager', kind: '[the cloud\'s safe]', lines: ['the real source'] },
+      reg: { type: 'box', cls: 'infra', x: 1240, y: 780, w: 240, h: 110, name: 'Image registry', kind: '[shelf of Docker images]', lines: ['v1.3 · v1.4 · …'] },
+      gh: { type: 'box', cls: 'infra', x: 1240, y: 1000, w: 240, h: 130, name: 'GitHub Actions', kind: '[build + deploy]', lines: ['tests, builds the image'] },
+      mon: { type: 'box', cls: 'infra', x: 60, y: 1100, w: 280, h: 120, name: 'Monitoring', kind: '[Prometheus + Grafana]', lines: ['📈 graphs + 🔔 alerts'] },
+      kc: { type: 'box', cls: 'other', x: 60, y: 900, w: 280, h: 130, name: 'Keycloak', kind: '[login service · other team]', lines: ['hands out tokens'] },
+    };
+
+    const EDGES = {
+      pmPim: { d: 'M200,190 V254', label: '', tech: '' },
+      shopWeb: { d: 'M760,190 V254', label: '', tech: '' },
+      prmPrice: { d: 'M1320,190 V254', label: '', tech: '' },
+      pimLb: { d: 'M200,400 V550 H514', label: 'Sends products', tech: '[PUT + token]', lx: 208, ly: 470 },
+      pimKc: { d: 'M120,400 V894', label: 'PIM gets a token', tech: '[OAuth2]', lx: 132, ly: 680 },
+      webLb: { d: 'M760,400 V504', label: 'Gets products', tech: '[GET /products + token]', lx: 774, ly: 446 },
+      lbCopies: { d: ['M580,590 V684', 'M770,590 V684', 'M960,590 V684'], label: 'Spreads the requests', tech: '[2 to N copies, autoscaled]', lx: 592, ly: 614, tly: 631 },
+      copiesDb: { d: ['M580,870 V954', 'M770,870 V954', 'M960,870 V954'], label: 'Reads and writes', tech: '', lx: 592, ly: 952 },
+      copySync: { d: 'M1040,730 H1320 V406', label: 'Pulls prices · every ~10 s', tech: '[only copy 3 · with its own token]', lx: 1060, ly: 716, tly: 752 },
+      copyKc: { d: 'M494,820 H200 V894', label: 'Downloads the public key', tech: '[once, at startup]', lx: 212, ly: 810, tly: 838 },
+      webKc: { d: 'M640,400 V440 H320 V894', label: 'Webshop gets a token', tech: '[only when expired]', lx: 332, ly: 640, tly: 657 },
+      c3Kc: { d: 'M900,870 V930 H346', label: 'Own token', tech: '[for GET /prices]', lx: 790, ly: 922, tly: 950 },
+      // docker: the image comes from the registry, the settings from the ConfigMap and the Secret
+      cfgDep: { d: 'M510,964 V906', label: '', tech: '' },
+      monDep: { d: 'M340,1160 H362 V880 H464', label: 'Collects the numbers', tech: '[every 5 s · /actuator/prometheus]', lx: 70, ly: 1246, tly: 1263 },
+      secDep: { d: 'M1020,964 V906', label: '', tech: '' },
+      vaultSec: { d: 'M1070,1130 V1090', label: 'Fills it', tech: '', lx: 1082, ly: 1116 },
+      regDep: { d: 'M1240,835 H1076', label: 'Pulls the image', tech: '[when a copy starts]', lx: 1086, ly: 826, tly: 852 },
+      ghReg: { d: 'M1440,1000 V896', label: 'Pushes the image', tech: '[after the tests pass]', lx: 1452, ly: 945, tly: 962 },
+      ghDep: { d: 'M1240,1065 H1160 V870 H1076', label: 'Sets the new version', tech: '[one copy at a time]', lx: 1172, ly: 940, tly: 957 },
+    };
+
+    // What a zoomable box shows inside when it's clicked (and in the security scenario)
+    const CLIENTS = [
+      ['pim', 'pim', 'products:write', 'may send products'],
+      ['webshop', 'webshop', 'products:read', 'may read products'],
+      ['catalog', 'catalog-service', 'prices:read', 'may read prices'],
+    ];
+    function keycloakInside(g, e) {
+      const cx = e.x + e.w / 2;
+      text(g, 'in-title', cx, e.y + 20, 'Keycloak · realm "shop"');
+      text(g, 'in-sub', cx, e.y + 31, 'who may do what');
+      CLIENTS.forEach(([key, name, perm, what], i) => {
+        const w = 84, x0 = e.x + 10 + i * (w + 9), y0 = e.y + 40;
+        const c = svg('g', { 'data-inner': `kc-${key}` }, g);
+        svg('rect', { class: 'in-card', x: x0, y: y0, width: w, height: 80, rx: 6 }, c);
+        text(c, 'in-name', x0 + w / 2, y0 + 15, name);
+        text(c, 'in-muted', x0 + w / 2, y0 + 25, '[client]');
+        svg('rect', { class: 'in-chip', x: x0 + 8, y: y0 + 33, width: w - 16, height: 13, rx: 6.5 }, c);
+        text(c, 'in-chip-text', x0 + w / 2, y0 + 42, perm);
+        text(c, 'in-text mid', x0 + w / 2, y0 + 60, what);
+      });
+    }
+    // inside the Price System: its security checks the 🎫 before anything else
+    function tokenCheckInside(title, who) {
+      return (g, e, id) => {
+        const cx = e.x + e.w / 2;
+        text(g, 'in-title', cx, e.y + 22, title);
+        const c = svg('g', { 'data-inner': `${id}-sec` }, g);
+        const w = Math.min(e.w - 24, 150), h = 74, x0 = cx - w / 2, y0 = e.y + 36;
+        svg('rect', { class: 'in-card', x: x0, y: y0, width: w, height: h, rx: 8 }, c);
+        text(c, 'in-big', cx, y0 + 30, '🎫');
+        text(c, 'in-name', cx, y0 + 50, who);
+        text(c, 'in-muted', cx, y0 + 62, 'checks the token');
+        text(c, 'in-ok big', x0 + w - 8, y0 + 22, '✓');
+      };
+    }
+    // inside Monitoring: Prometheus collects from the copies, Grafana asks Prometheus and draws
+    const MON_PARTS = [
+      ['graf', 'Grafana', '[shows]', '📈 graphs · 🔔 alerts', ['has no numbers itself', 'asks Prometheus, draws']],
+      ['prom', 'Prometheus', '[collects + keeps]', 'every 5 s', ['pulls from every copy', 'keeps the numbers']],
+    ];
+    function monitoringInside(g, e) {
+      const cx = e.x + e.w / 2, w = 104, y0 = e.y + 38, h = 74;
+      text(g, 'in-title', cx, e.y + 18, 'Monitoring');
+      text(g, 'in-sub', cx, e.y + 29, 'Prometheus collects · Grafana shows');
+      MON_PARTS.forEach(([key, name, kind, chip, lines], i) => {
+        const x0 = i ? e.x + e.w - 10 - w : e.x + 10;
+        const c = svg('g', { 'data-inner': `mon-${key}` }, g);
+        svg('rect', { class: 'in-card', x: x0, y: y0, width: w, height: h, rx: 6 }, c);
+        text(c, 'in-name', x0 + w / 2, y0 + 13, name);
+        text(c, 'in-muted', x0 + w / 2, y0 + 22, kind);
+        svg('rect', { class: 'in-chip', x: x0 + 8, y: y0 + 28, width: w - 16, height: 12, rx: 6 }, c);
+        text(c, 'in-chip-text', x0 + w / 2, y0 + 36.5, chip);
+        lines.forEach((l, n) => text(c, 'in-text mid', x0 + w / 2, y0 + 52 + n * 9, l));
+      });
+      // between the two: Grafana asks, Prometheus answers
+      const left = e.x + 10 + w, right = e.x + e.w - 10 - w, mid = (left + right) / 2;
+      [[y0 + 26, left + 2, right - 2, 'asks', '(PromQL)'], [y0 + 50, right - 2, left + 2, 'answers', 'numbers']].forEach(([y, from, to, top, bottom]) => {
+        const dir = to > from ? 1 : -1;
+        svg('path', { class: 'in-arrow', d: `M${from},${y} H${to - dir * 3}` }, g);
+        svg('path', { class: 'in-arrow-head', d: `M${to},${y} l${-dir * 4},-2.2 v4.4 z` }, g);
+        text(g, 'in-muted', mid, y - 3, top);
+        text(g, 'in-muted', mid, y + 7, bottom);
+      });
+    }
+    const INNER = { kc: keycloakInside, priceSys: tokenCheckInside('Price System', 'its security'), mon: monitoringInside };
+
+    function svg(tag, attrs, parent) {
+      const e = document.createElementNS(NS, tag);
+      for (const [a, v] of Object.entries(attrs)) e.setAttribute(a, v);
+      if (parent) parent.appendChild(e);
+      return e;
+    }
+    const text = (parent, cls, x, y, value, anchor) => {
+      const t = svg('text', { class: cls, x, y, ...(anchor ? { 'text-anchor': anchor } : {}) }, parent);
+      t.textContent = value;
+      return t;
+    };
+
+    function draw() {
+      for (const z of ZONES) {
+        const g = svg('g', { class: 'zone' }, scene);
+        svg('rect', { class: 'zone-rect' + (z.ours ? ' ours-zone' : ''), x: z.x, y: z.y, width: z.w, height: z.h, rx: 14 }, g);
+        const tx = z.right ? z.x + z.w - 16 : z.x + 16;
+        text(g, 'zone-name' + (z.ours ? ' ours-zone' : ''), tx, z.y + z.h - 30, z.name, z.right ? 'end' : null);
+        text(g, 'zone-kind', tx, z.y + z.h - 12, z.kind, z.right ? 'end' : null);
+      }
+      for (const [id, e] of Object.entries(EDGES)) {
+        const g = svg('g', { class: 'edge', 'data-edge': id }, scene);
+        for (const d of [].concat(e.d)) svg('path', { class: 'rel', d, 'marker-end': 'url(#arrow)' }, g);
+        if (e.label) text(g, 'rel-label', e.lx, e.ly, e.label);
+        if (e.tech) text(g, 'rel-tech', e.tlx ?? e.lx, e.tly ?? e.ly + 17, e.tech);
+      }
+      for (const [id, e] of Object.entries(EL)) {
+        const g = svg('g', { class: 'el', 'data-el': id, role: 'button', tabindex: 0, 'aria-label': e.name || e.label }, scene);
+        if (e.type === 'person') {
+          svg('circle', { class: 'person shape', cx: e.cx, cy: e.cy - 34, r: 34 }, g);
+          svg('rect', { class: 'person shape', x: e.cx - 100, y: e.cy, width: 200, height: 96, rx: 40 }, g);
+          text(g, 'name', e.cx, e.cy + 36, e.name);
+          text(g, 'kind', e.cx, e.cy + 56, e.kind);
+          text(g, 'desc', e.cx, e.cy + 78, e.lines[0]);
+          continue;
+        }
+        if (e.type === 'frame') {
+          svg('rect', { class: 'dep-frame shape', x: e.x, y: e.y, width: e.w, height: e.h, rx: 16 }, g);
+          text(g, 'frame-name', e.tx, e.ty, e.name);
+          text(g, 'frame-kind', e.tx, e.ty + 16, e.kind);
+          continue;
+        }
+        const cx = e.x + e.w / 2;
+        if (e.type === 'cyl') {
+          const rx = e.w / 2, ry = 18;
+          svg('path', { class: e.cls + ' shape', d: `M${e.x},${e.y + ry} a${rx},${ry} 0 0,1 ${e.w},0 v${e.h - 2 * ry} a${rx},${ry} 0 0,1 -${e.w},0 z` }, g);
+          svg('path', { d: `M${e.x},${e.y + ry} a${rx},${ry} 0 0,0 ${e.w},0`, fill: 'none', stroke: 'rgba(255,255,255,.45)', 'stroke-width': 1.5 }, g);
+        } else {
+          svg('rect', { class: e.cls + ' shape', x: e.x, y: e.y, width: e.w, height: e.h, rx: 14 }, g);
+        }
+        if (e.label) { text(g, 'desc', cx, e.y + e.h / 2 + 5, e.label); continue; }
+        const og = INNER[id] ? svg('g', { class: 'outer' }, g) : g;
+        let ty = e.y + (e.type === 'cyl' ? 72 : 32);
+        if (e.name) { text(og, 'name', cx, ty, e.name); ty += 22; }
+        if (e.kind) { text(og, 'kind', cx, ty, e.kind); ty += 24; }
+        for (const l of e.lines) { text(og, 'desc', cx, ty, l); ty += 19; }
+        (e.badges || []).forEach(([label, tone], i) => {
+          const bw = label.length * 6.6 + 18, by = e.y + e.h - 30 - i * 26;
+          svg('rect', { class: 'badge-bg ' + tone, x: cx - bw / 2, y: by - 13, width: bw, height: 20, rx: 10 }, og);
+          text(og, 'badge-text', cx, by + 1, label);
+        });
+        if (INNER[id]) {
+          g.classList.add('zoomable');
+          text(g, 'zoom-mark', e.x + e.w - 14, e.y + 20, '⤢', 'end');
+          INNER[id](svg('g', { class: 'inner' }, g), e, id);
+        }
+      }
+      // flow layer: past trails, the current trail, a spotlight and the packet
+      const fl = svg('g', { id: 'flow-layer' }, scene);
+      svg('g', { id: 'trails' }, fl);
+      svg('path', { id: 'trail-now', class: 'trail now', d: '' }, fl);
+      svg('rect', { id: 'spot', class: 'spot', x: 0, y: 0, width: 0, height: 0, rx: 18 }, fl);
+      const pk = svg('g', { id: 'packet', class: 'hidden' }, fl);
+      svg('circle', { class: 'pk-glow', r: 20 }, pk);
+      svg('circle', { class: 'pk-core', r: 9 }, pk);
+      svg('rect', { id: 'pk-pill', y: -50, height: 28, rx: 14 }, pk);
+      svg('text', { id: 'pk-text', y: -31 }, pk);
+      // legend
+      const lg = svg('g', { transform: 'translate(380 1350)' }, scene);
+      [['person', 'Person'], ['ours', 'Ours: Product Catalog'], ['other', 'Other team'], ['infra', 'Infrastructure']].forEach(([cls, label], i) => {
+        svg('rect', { class: cls, x: i * 200, y: 0, width: 18, height: 18, rx: 4 }, lg);
+        text(lg, 'legend-text', i * 200 + 26, 14, label);
+      });
+      svg('rect', { x: 820, y: 0, width: 18, height: 18, rx: 4, fill: 'none', stroke: 'var(--zone)', 'stroke-width': 2, 'stroke-dasharray': '4 3' }, lg);
+      text(lg, 'legend-text', 846, 14, 'Kubernetes cluster');
+      svg('rect', { class: 'dep-frame', x: 1020, y: 0, width: 18, height: 18, rx: 4 }, lg);
+      text(lg, 'legend-text', 1046, 14, 'Deployment (the copies)');
+    }
+
+    // ---- what each part is, and why ------------------------------------------
+    const today = (v) => `<div class="today"><b>In the demo today</b>${v}</div>`;
+    const INFO = {
+      pm: { eyebrow: 'Person', html: 'Edits products in the PIM.' },
+      shopper: { eyebrow: 'Person', html: 'Browses the webshop.' },
+      prm: { eyebrow: 'Person', html: 'Sets prices in the Price System.' },
+      kc: { eyebrow: 'Login service · other team', html: 'Hands out 🎫 tokens: who you are, what you may do, until when, with a stamp only Keycloak can make.' +
+        '<div class="d-h">Who may do what</div>PIM: <code>products:write</code> · webshop: <code>products:read</code> · catalog: <code>prices:read</code>' +
+        today('No Keycloak: every endpoint is open.') },
+      pim: { eyebrow: 'Other team', html: 'Another team\'s service, on the same platform: product managers enter products here. Sends products to the catalog.' + today('fake-pim') },
+      webshop: { eyebrow: 'Other team', html: 'Reads products from the catalog.' + today('catalog-ui') },
+      priceSys: { eyebrow: 'Other team', html: 'Knows the prices. Same <code>price-api.yaml</code> as the fake.' + today('fake-price-service + fake-price-ui') },
+      lb: { eyebrow: 'Kubernetes Ingress', html: 'The one way in: spreads requests over the healthy copies.' + today('No load balancer: only copy 1 has a port.') },
+      copy1: { eyebrow: 'Ours · pod', html: copyInfo() },
+      copy2: { eyebrow: 'Ours · pod', html: copyInfo() },
+      copy3: { eyebrow: 'Ours · pod · runs the sync', html: copyInfo() + '<div class="d-h">The sync</div>ShedLock: only one copy syncs per round.' },
+      db: { eyebrow: 'Ours · managed by the cloud', html: 'Backups and a spare copy, run by the cloud provider. Not a container of ours.' + today('postgres in docker-compose, no volume.') },
+      gh: { eyebrow: 'Build + deploy', html: 'Runs the tests, builds the Docker image from the <code>Dockerfile</code>, puts it in the registry, then tells Kubernetes the new version.' +
+        today('Builds and tests, no image pushed, no deploy.') },
+      reg: { eyebrow: 'Infrastructure · image registry', html: 'The shelf of Docker images, one per version (e.g. GitHub\'s own, or the cloud\'s). GitHub Actions puts every new version here; Kubernetes takes it from here when it starts a copy.' +
+        '<div class="d-h">What an image is</div>A packed box: Java + the catalog-service app, built from the <code>Dockerfile</code>. The same box runs on your laptop, in CI and in production. Only the settings differ.' +
+        today('docker compose builds the image on your laptop. No registry.') },
+      dep: { eyebrow: 'Kubernetes Deployment', html: 'The order to Kubernetes: "keep 3 copies of image v1.4 running, with these settings and passwords". If a copy dies, Kubernetes starts a new one.' +
+        '<div class="d-h">A new version</div>Only the version number changes (v1.4 → v1.5). Kubernetes then swaps the copies one at a time, so the shop never goes down.' +
+        '<div class="d-h">Pods and nodes</div>Each copy is a <b>pod</b>: one running container, started from the image. Pods run on the cluster\'s computers (<b>nodes</b>). Kubernetes picks which, and spreads the copies, so one broken computer doesn\'t take the catalog down. Nodes are the platform team\'s job, so they aren\'t drawn.' +
+        today('docker-compose: <code>catalog-service</code> and <code>catalog-service-2</code>.') },
+      cfg: { eyebrow: 'Ours · Kubernetes ConfigMap', html: 'Settings that aren\'t secret. Every copy gets them as environment variables when it starts.' +
+        '<ul><li><code>SPRING_DATASOURCE_URL</code>: where the database is</li><li><code>PRICE_SYSTEM_BASE_URL</code>: where the Price System is</li></ul>' +
+        'Spring Boot reads <code>PRICE_SYSTEM_BASE_URL</code> as <code>price-system.base-url</code>, so it wins over <code>application.yaml</code>. The image stays the same; only these notes change per environment.' +
+        today('The <code>environment:</code> block in <code>docker-compose.yaml</code>.') },
+      mon: { eyebrow: 'Infrastructure · monitoring', html: 'Two tools, each with one job.' +
+        '<ul><li><b>Prometheus collects.</b> Every 5 s it pulls <code>/actuator/prometheus</code> from every copy and keeps the numbers over time. Pull: the copies don\'t know it exists, and a copy it can\'t reach is a signal in itself.</li>' +
+        '<li><b>Grafana shows.</b> It has no numbers of its own: it asks Prometheus (in PromQL) and draws the answer. An alert is a rule on the same question, e.g. "95% of searches slower than 1 s".</li></ul>' +
+        '<div class="d-h">The 95% line</div>Every copy counts its requests in about 70 time buckets, from 1 ms to 30 s ("how many within 0.25 s?"). Prometheus adds the buckets of all copies up and works out "95% faster than". That\'s why it can be one correct number for the whole service.' +
+        today('Prometheus (<code>localhost:9090</code>) and Grafana (<code>localhost:3003</code>) run in docker-compose. Dashboard "Product Catalog": copies up, search time with the 1 s line, requests per copy.') },
+      vault: { eyebrow: 'Cloud service', html: 'Where the passwords really live: AWS Secrets Manager or Azure Key Vault. Encrypted, access logged. Kubernetes copies them into the Secret.' +
+        today('No safe: the password is in <code>docker-compose.yaml</code>.') },
+      sec: { eyebrow: 'Ours · Kubernetes Secret', html: 'Passwords, kept apart from the settings and never in Git. Also handed to every copy as environment variables.' +
+        '<ul><li><code>SPRING_DATASOURCE_USERNAME</code> / <code>_PASSWORD</code></li><li>the catalog\'s own Keycloak secret (for its 🎫)</li></ul>' +
+        today('The password is written in <code>docker-compose.yaml</code> (default <code>catalog</code>).') },
+    };
+    function copyInfo() {
+      return 'One copy of catalog-service: a container started from the image. Keeps nothing itself, so any copy can answer.' +
+        '<div class="d-h">How many</div>At least 2; Kubernetes adds more when busy.' +
+        '<a class="c4-jump" href="c4-model.html#components">Inside: the C4 model →</a>';
+    }
+
+    // ---- camera (same feel as the C4 model) ----------------------------------
+    let k = 1, x = 0, y = 0;
+    const MIN = 0.2, MAX = 6, DOT = 24;
+    const BOUNDS = { x: 30, y: 0, w: 1580, h: 1390 };
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const lerp = (a, b, q) => a + (b - a) * q;
+    const ease = (q) => (q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2);
+    const clampK = (v) => Math.min(Math.max(v, MIN), MAX);
+
+    function apply() {
+      scene.setAttribute('transform', `translate(${x} ${y}) scale(${k})`);
+      viewport.style.backgroundSize = `${DOT * k}px ${DOT * k}px`;
+      viewport.style.backgroundPosition = `${x}px ${y}px`;
+      $('zoom-level').textContent = Math.round(k * 100) + '%';
+    }
+    function freeArea() {
+      const vw = viewport.clientWidth, vh = viewport.clientHeight;
+      const top = document.querySelector('header.panel').getBoundingClientRect().bottom + 8;
+      const side = $('side');
+      if (!side.classList.contains('open')) return { x: 0, y: top, w: vw, h: vh - top };
+      const r = side.getBoundingClientRect();
+      return r.top > vh * 0.3 ? { x: 0, y: top, w: vw, h: r.top - top - 16 } : { x: 0, y: top, w: r.left - 16, h: vh - top };
+    }
+    let camAnim = null;
+    function flyTo(b, duration = 700, maxK = MAX) {
+      cancelAnimationFrame(camAnim);
+      const a = freeArea(), ax = a.x + a.w / 2, ay = a.y + a.h / 2;
+      const to = { k: Math.min(clampK(Math.min(a.w / b.w, a.h / b.h) * 0.92), maxK), cx: b.x + b.w / 2, cy: b.y + b.h / 2 };
+      const from = { k, cx: (ax - x) / k, cy: (ay - y) / k };
+      const start = performance.now(), d = reduceMotion ? 0 : duration;
+      (function frame() {
+        const q = d ? Math.min(Math.max((performance.now() - start) / d, 0), 1) : 1;
+        const e = ease(q);
+        k = from.k * Math.pow(to.k / from.k, e);
+        x = ax - lerp(from.cx, to.cx, e) * k;
+        y = ay - lerp(from.cy, to.cy, e) * k;
+        apply();
+        if (q < 1) camAnim = requestAnimationFrame(frame);
+      })();
+    }
+    const fit = (d = 0) => flyTo(BOUNDS, d);
+    function zoomAt(factor, cx, cy) {
+      const nk = clampK(k * factor);
+      x = cx - (cx - x) * (nk / k);
+      y = cy - (cy - y) * (nk / k);
+      k = nk;
+      apply();
+    }
+
+    const pixels = (d, mode) => (mode === 1 ? d * 16 : mode === 2 ? d * viewport.clientHeight : d);
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      cancelAnimationFrame(camAnim);
+      const dx = pixels(e.deltaX, e.deltaMode), dy = pixels(e.deltaY, e.deltaMode);
+      if (e.ctrlKey || e.metaKey) zoomAt(Math.abs(dy) >= 50 ? (dy < 0 ? 1.2 : 1 / 1.2) : Math.pow(2, -dy * 0.01), e.clientX, e.clientY);
+      else { x -= dx; y -= dy; apply(); }
+    }, { passive: false });
+    let gestureK = null;
+    viewport.addEventListener('gesturestart', (e) => { e.preventDefault(); gestureK = k; });
+    viewport.addEventListener('gesturechange', (e) => { e.preventDefault(); if (gestureK) zoomAt((gestureK * e.scale) / k, e.clientX, e.clientY); });
+    viewport.addEventListener('gestureend', (e) => { e.preventDefault(); gestureK = null; });
+
+    const pointers = new Map();
+    let press = null, lastPinch = null;
+    viewport.addEventListener('pointerdown', (e) => {
+      cancelAnimationFrame(camAnim);
+      viewport.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      press = pointers.size === 1 ? { x: e.clientX, y: e.clientY, moved: false } : null;
+      viewport.classList.add('dragging');
+    });
+    viewport.addEventListener('pointermove', (e) => {
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
+      const curr = { x: e.clientX, y: e.clientY };
+      pointers.set(e.pointerId, curr);
+      if (press && Math.hypot(curr.x - press.x, curr.y - press.y) > 4) press.moved = true;
+      if (pointers.size === 1) { x += curr.x - prev.x; y += curr.y - prev.y; apply(); }
+      else if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y), mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        if (lastPinch) { x += mid.x - lastPinch.mid.x; y += mid.y - lastPinch.mid.y; zoomAt(dist / lastPinch.dist, mid.x, mid.y); }
+        lastPinch = { dist, mid };
+      }
+    });
+    function release(e) {
+      const wasClick = press && !press.moved && pointers.size === 1 && e.type === 'pointerup';
+      pointers.delete(e.pointerId);
+      lastPinch = null;
+      if (!pointers.size) viewport.classList.remove('dragging');
+      if (wasClick) {
+        const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-el]');
+        if (el) clickBox(el.dataset.el, e.clientX, e.clientY);
+        else if (!sc) closeBoxes();
+      }
+      press = null;
+    }
+    viewport.addEventListener('pointerup', release);
+    viewport.addEventListener('pointercancel', release);
+
+    function zoomCenter(factor) {
+      const cx = viewport.clientWidth / 2, cy = viewport.clientHeight / 2, target = clampK(k * factor), start = k, t0 = performance.now();
+      (function step() {
+        const q = Math.min((performance.now() - t0) / 160, 1);
+        zoomAt((start * Math.pow(target / start, 1 - Math.pow(1 - q, 3))) / k, cx, cy);
+        if (q < 1) requestAnimationFrame(step);
+      })();
+    }
+    $('zoom-in').addEventListener('click', () => zoomCenter(1.25));
+    $('zoom-out').addEventListener('click', () => zoomCenter(0.8));
+    $('fit').addEventListener('click', () => (sc ? frameStep() : (setOpen([]), $('hint').textContent = HINT, fit(400))));
+    window.addEventListener('resize', () => (sc ? frameStep() : opened.length ? flyTo(boxBounds(opened[0]), 0, BOX_ZOOM) : fit()));
+
+    // ---- zoom into a box ------------------------------------------------------
+    let opened = [];
+    function setOpen(ids) {
+      opened = ids.filter((id) => INNER[id]);
+      scene.querySelectorAll('.el.zoomable').forEach((g) => g.classList.toggle('open', opened.includes(g.dataset.el)));
+    }
+    function boxBounds(id, pad = 24) {
+      const e = EL[id];
+      return { x: e.x - pad, y: e.y - pad, w: e.w + 2 * pad, h: e.h + 2 * pad };
+    }
+    const BOX_ZOOM = 1.8; // opening a box zooms in a bit, not all the way
+    function openBox(id) {
+      setOpen([id]);
+      flyTo(boxBounds(id), 700, BOX_ZOOM);
+      $('hint').textContent = 'Click the box again for the details · click outside or Esc to zoom out';
+    }
+    function closeBoxes() {
+      if (!opened.length) return false;
+      setOpen([]);
+      $('hint').textContent = HINT;
+      fit(500);
+      return true;
+    }
+    function clickBox(id, sx, sy) {
+      if (!sc && INNER[id] && !opened.includes(id)) openBox(id);
+      else openInfo(id, sx, sy);
+    }
+
+    // ---- detail card ---------------------------------------------------------
+    const detail = $('detail');
+    function openInfo(id, sx, sy) {
+      const e = EL[id], info = INFO[id];
+      if (!info) return;
+      $('d-eyebrow').textContent = info.eyebrow;
+      $('d-title').textContent = e.name || e.label;
+      $('d-body').innerHTML = info.html;
+      const card = $('detail-card');
+      card.style.setProperty('--sc', sc ? sc.color : 'var(--active)');
+      detail.hidden = false;
+      card.scrollTop = 0;
+      const left = (innerWidth - card.offsetWidth) / 2, top = (innerHeight - card.offsetHeight) / 2;
+      card.style.transformOrigin = `${sx - left}px ${sy - top}px`;
+      requestAnimationFrame(() => detail.classList.add('open'));
+    }
+    function closeInfo() {
+      if (detail.hidden) return;
+      detail.classList.remove('open');
+      setTimeout(() => { if (!detail.classList.contains('open')) detail.hidden = true; }, reduceMotion ? 0 : 260);
+    }
+    $('d-close').addEventListener('click', closeInfo);
+    detail.addEventListener('click', (e) => { if (e.target === detail) closeInfo(); });
+
+    // ---- scenarios -------------------------------------------------------------
+    // Every step: the packet travels along `path` (points on the arrows) and arrives at `at`.
+    // `open` / `inner` / `zoomIn`: on arrival, look inside a box (Keycloak, a catalog-service copy).
+    const P = {
+      pmPim: [[200, 186], [200, 256]], pimPm: [[200, 256], [200, 186]],
+      pimKc: [[120, 402], [120, 896]], kcPim: [[120, 896], [120, 402]],
+      pimLb: [[200, 402], [200, 550], [516, 550]], lbPim: [[516, 550], [200, 550], [200, 402]],
+      shopWeb: [[760, 186], [760, 256]], webShop: [[760, 256], [760, 186]],
+      webLb: [[760, 402], [760, 506]], lbWeb: [[760, 506], [760, 402]],
+      lbC1: [[580, 592], [580, 686]], c1Lb: [[580, 686], [580, 592]],
+      lbC2: [[770, 592], [770, 686]], c2Lb: [[770, 686], [770, 592]],
+      c1Db: [[580, 872], [580, 956]], dbC1: [[580, 956], [580, 872]],
+      c2Db: [[770, 872], [770, 956]], dbC2: [[770, 956], [770, 872]],
+      c3Db: [[960, 872], [960, 956]], dbC3: [[960, 956], [960, 872]],
+      c1Kc: [[496, 820], [200, 820], [200, 896]], kcC1: [[200, 896], [200, 820], [496, 820]],
+      webKc: [[640, 402], [640, 440], [320, 440], [320, 896]], kcWeb: [[320, 896], [320, 440], [640, 440], [640, 402]],
+      c3Kc: [[900, 872], [900, 930], [344, 930]], kcC3: [[344, 930], [900, 930], [900, 872]],
+      c3Price: [[1042, 730], [1320, 730], [1320, 404]], priceC3: [[1320, 404], [1320, 730], [1042, 730]],
+      regDep: [[1238, 835], [1076, 835]],
+      ghReg: [[1440, 998], [1440, 894]],
+      ghDep: [[1238, 1065], [1160, 1065], [1160, 870], [1076, 870]],
+      cfgC1: [[510, 962], [510, 874]],
+      // the Secret's arrow ends near copy 3: the packet goes on under the copies to copy 1
+      secC1: [[1020, 962], [1020, 888], [640, 888], [640, 874]],
+      vaultSec: [[1070, 1128], [1070, 1088]],
+      monC2: [[342, 1160], [362, 1160], [362, 884], [770, 884], [770, 874]],
+      monC3: [[342, 1160], [362, 1160], [362, 884], [960, 884], [960, 874]],
+    };
+    const shopBack = (n) => [
+      { title: `Copy ${n} checks the 🎫`, at: `copy${n}`, text: 'Real stamp, not expired, allowed to read products.' },
+      { title: 'Reads the products', path: P[`c${n}Db`], at: 'db', label: 'SELECT', kind: 'sql', els: [`copy${n}`], text: '' },
+      { title: 'Rows back', path: P[`dbC${n}`], at: `copy${n}`, label: 'rows', kind: 'sql', text: '' },
+      { title: 'The answer goes back', path: [...P[`c${n}Lb`], [760, 506], ...P.lbWeb.slice(1)], at: 'webshop', els: ['lb'], label: '200 · JSON', kind: 'http', text: '' },
+      { title: 'The shopper sees the products, with prices', path: P.webShop, at: 'shopper', label: 'the page', kind: 'user', text: '' },
+    ];
+    const SCENARIOS = [
+      { id: 'start', name: '1 · A copy starts', color: '#14b8a6', desc: 'From the image, with its settings, until it\'s ready.',
+        steps: [
+          { title: 'Kubernetes starts copy 1 from the image', path: P.regDep, at: 'copy1', els: ['reg', 'dep'], label: '📦 image v1.4', kind: 'image',
+            text: 'Taken from the registry. The same image runs on your laptop, in CI and here.' },
+          { title: 'It gets its settings', path: P.cfgC1, at: 'copy1', els: ['cfg'], label: 'env vars', kind: 'config',
+            text: 'As environment variables, like <code>PRICE_SYSTEM_BASE_URL</code>. They win over <code>application.yaml</code>.' },
+          { title: 'The passwords come from the cloud\'s safe', path: P.vaultSec, at: 'sec', els: ['vault'], label: '🔒 passwords', kind: 'config',
+            text: 'Copied into the Kubernetes Secret.' },
+          { title: 'It gets its passwords', path: P.secC1, at: 'copy1', els: ['sec'], label: 'env vars 🔒', kind: 'config',
+            text: 'Also as environment variables, like <code>SPRING_DATASOURCE_PASSWORD</code>. Kept apart, never in Git.' },
+          { title: 'Copy 1 asks Keycloak: "what does your stamp look like?"', path: P.c1Kc, at: 'kc', label: 'public key?', kind: 'token', text: 'Once, at startup.' },
+          { title: 'It keeps Keycloak\'s public key', path: P.kcC1, at: 'copy1', label: '🔑 public key', kind: 'token',
+            text: 'It uses it to check every 🎫.' },
+          { title: 'Health check passes: ready', at: 'copy1', els: ['lb'],
+            text: 'Kubernetes asks <code>/actuator/health/readiness</code>. Only now does the load balancer send it requests.' },
+        ] },
+      { id: 'security', name: '2 · The PIM sends a product', color: '#a855f7', desc: 'With a 🎫 from Keycloak, checked by the catalog.',
+        steps: [
+          { title: 'A product is saved in the PIM', path: P.pmPim, at: 'pim', label: 'saves', kind: 'user', text: '' },
+          { title: 'The PIM gets a 🎫 (only when expired)', path: P.pimKc, at: 'kc', label: 'ID + secret', kind: 'token', open: ['kc'], inner: ['kc-pim'], zoomIn: true,
+            text: 'Reused for 5 minutes.' },
+          { title: 'Keycloak gives a 🎫 with a stamp', path: P.kcPim, at: 'pim', label: '🎫 products:write', kind: 'token', text: 'Only Keycloak can make the stamp.' },
+          { title: 'Request, with the 🎫', path: P.pimLb, at: 'lb', label: 'PUT /products + 🎫', kind: 'http', text: '' },
+          { title: 'The load balancer picks a copy', path: P.lbC1, at: 'copy1', label: 'PUT /products + 🎫', kind: 'http', text: '' },
+          { title: 'Copy 1 checks the 🎫', at: 'copy1', text: 'Real stamp, not expired, allowed to send products. Otherwise 401 / 403.' },
+          { title: 'Only then: saved', path: P.c1Db, at: 'db', label: 'INSERT / UPDATE', kind: 'sql', els: ['copy1'], text: 'Without a price: only the sync sets prices.' },
+          { title: 'Saved', path: P.dbC1, at: 'copy1', label: 'saved', kind: 'sql', text: '' },
+          { title: 'The answer goes back', path: [...P.c1Lb, [580, 550], ...P.lbPim], at: 'pim', els: ['lb'], label: '201 / 200', kind: 'http', text: '' },
+        ] },
+      { id: 'sync', name: '3 · The price sync', color: '#3b82f6', desc: 'Every ~10 s, one copy pulls the prices.',
+        steps: [
+          { title: 'Copy 3 takes the lock', path: P.c3Db, at: 'db', label: 'take lock', kind: 'lock', text: 'Copies 1 and 2 find it taken and skip.' },
+          { title: 'Lock taken', path: P.dbC3, at: 'copy3', label: 'yours', kind: 'lock', text: '',
+            fork: { id: 'crash', question: 'Does copy 3 keep running?', options: [
+              { id: 'yes', label: 'Yes', steps: [
+                { title: 'Copy 3 gets its own 🎫 (only when expired)', path: P.c3Kc, at: 'kc', label: 'ID + secret', kind: 'token', open: ['kc'], inner: ['kc-catalog'], zoomIn: true,
+                  text: 'Now the catalog is the caller.' },
+                { title: 'Keycloak gives the 🎫', path: P.kcC3, at: 'copy3', label: '🎫 prices:read', kind: 'token', text: '' },
+                { title: 'Asks for prices, with the 🎫', path: P.c3Price, at: 'priceSys', label: 'GET /prices + 🎫', kind: 'http', text: '' },
+                { title: 'The Price System checks the 🎫', at: 'priceSys', open: ['priceSys'], inner: ['priceSys-sec'], zoomIn: true,
+                  text: 'The one being called checks.' },
+                { title: 'All prices come back', path: P.priceC3, at: 'copy3', label: 'all prices', kind: 'http', text: '' },
+                { title: 'Only newer prices are saved', path: P.c3Db, at: 'db', label: 'UPDATE newer', kind: 'sql', text: '' },
+                { title: 'Done', path: P.dbC3, at: 'copy3', label: 'Price sync done', kind: 'sql', text: 'Next round in ~10 s.' },
+              ] },
+              { id: 'no', label: 'No, it crashes', steps: [
+                { title: 'Copy 3 crashes, holding the lock', at: 'copy3', text: 'Prices stop updating for a moment.' },
+                { title: 'Prometheus can\'t reach copy 3', path: P.monC3, at: 'copy3', els: ['mon'], label: 'numbers? … ✗', kind: 'health', text: '' },
+                { title: '🔔 Alert: copy 3 is down', at: 'mon', open: ['mon'], inner: ['mon-prom', 'mon-graf'], zoomIn: true, text: 'Grafana shows it red, and whoever is on duty gets a message.' },
+                { title: 'The lock frees itself', path: P.c2Db, at: 'db', els: ['copy2'], label: 'take lock', kind: 'lock', text: 'After 1 minute at most.' },
+                { title: 'Copy 2 takes over the sync', path: P.dbC2, at: 'copy2', label: 'yours', kind: 'lock', text: 'Nobody had to do anything.' },
+              ] },
+            ] } },
+        ] },
+      { id: 'shop', name: '4 · A shopper browses', color: '#ec4899', desc: 'Sees the products, with their prices.',
+        steps: [
+          { title: 'The shopper opens the shop', path: P.shopWeb, at: 'webshop', label: 'opens the shop', kind: 'user', text: '' },
+          { title: 'The webshop gets a 🎫 (only when expired)', path: P.webKc, at: 'kc', label: 'ID + secret', kind: 'token', open: ['kc'], inner: ['kc-webshop'], zoomIn: true,
+            text: 'Reused for 5 minutes, so usually skipped.' },
+          { title: 'Keycloak gives a read-only 🎫', path: P.kcWeb, at: 'webshop', label: '🎫 products:read', kind: 'token', text: '' },
+          { title: 'Request, with the 🎫', path: P.webLb, at: 'lb', label: 'GET /products + 🎫', kind: 'http', text: '',
+            fork: { id: 'healthy', question: 'Is copy 2 healthy?', options: [
+              { id: 'yes', label: 'Yes', steps: [
+                { title: 'The load balancer sends it to copy 2', path: P.lbC2, at: 'copy2', label: 'GET /products + 🎫', kind: 'http', text: '' },
+                ...shopBack(2),
+              ] },
+              { id: 'no', label: 'No, it just crashed', steps: [
+                { title: 'Copy 2 doesn\'t answer', path: P.lbC2, at: 'copy2', label: 'ready? … ✗', kind: 'health', text: 'It gets no more requests; Kubernetes restarts it.' },
+                { title: 'Prometheus can\'t reach copy 2 either', path: P.monC2, at: 'copy2', els: ['mon'], label: 'numbers? … ✗', kind: 'health', text: '' },
+                { title: '🔔 Alert: copy 2 is down', at: 'mon', open: ['mon'], inner: ['mon-prom', 'mon-graf'], zoomIn: true, text: 'Grafana shows it red, and whoever is on duty gets a message.' },
+                { title: 'The load balancer sends it to copy 1', path: [...P.c2Lb, [580, 592], [580, 686]], at: 'copy1', els: ['lb'], label: 'GET /products + 🎫', kind: 'http', text: 'The shopper doesn\'t notice.' },
+                ...shopBack(1),
+              ] },
+            ] } },
+        ] },
+      { id: 'deploy', name: '5 · A new version goes live', color: '#f59e0b', desc: 'From merged code to new copies, without downtime.',
+        steps: [
+          { title: 'The tests pass', at: 'gh', text: 'Every merge to main runs all tests first.' },
+          { title: 'It builds the image', at: 'gh', text: 'The <code>Dockerfile</code> packs Java + the app into one image, tagged v1.5.' },
+          { title: 'It puts the image on the shelf', path: P.ghReg, at: 'reg', label: '📦 v1.5', kind: 'image', text: 'Next to v1.4, so going back is easy.' },
+          { title: 'It tells Kubernetes: "use v1.5"', path: P.ghDep, at: 'dep', label: 'v1.4 → v1.5', kind: 'deploy',
+            text: 'Only the version number in the Deployment changes. The settings and passwords stay the same.' },
+          { title: 'A new copy starts from v1.5', path: P.regDep, at: 'dep', els: ['reg', 'copy1'], label: '📦 v1.5', kind: 'image',
+            text: 'It starts like in scenario 1: image, settings, health check.' },
+          { title: 'Ready: the old copy stops', at: 'dep', els: ['copy1'],
+            text: 'Then the next one, one at a time. There are always enough copies running, so the shop never goes down.' },
+        ] },
+      { id: 'version', name: '6 · A breaking API change', color: '#6366f1', desc: 'v2 next to v1, until nobody uses v1.',
+        steps: [
+          { title: 'A breaking change is needed', at: 'gh',
+            text: 'E.g. <code>name</code> becomes <code>title</code>.' },
+          { title: 'The contract gets /v2 next to /v1', at: 'gh',
+            text: '<code>/v1</code> marked <code>deprecated: true</code>.' },
+          { title: 'v1 and v2 go live together', path: P.ghDep, at: 'dep', els: ['copy1', 'copy2', 'copy3'], label: 'v1 + v2', kind: 'deploy', text: '' },
+          { title: 'End date for v1 announced', at: 'webshop', els: ['pim'],
+            text: '<code>/v1</code> stops on 1 March.' },
+          { title: 'The webshop still calls v1', path: P.webLb, at: 'lb', label: 'GET /v1/products', kind: 'http', text: '' },
+          { title: 'Copy 2 answers', path: P.lbC2, at: 'copy2', label: 'GET /v1/products', kind: 'http', text: '' },
+          { title: 'The answer carries a warning', path: [...P.c2Lb, [760, 506], ...P.lbWeb.slice(1)], at: 'webshop', els: ['lb'], label: '200 + Deprecation · Sunset', kind: 'http',
+            text: '<code>Deprecation: true</code> · <code>Sunset: 1 March</code>' },
+          { title: 'v1 calls are counted per caller', path: P.monC2, at: 'copy2', els: ['mon'], label: 'v1 calls', kind: 'config', text: '' },
+          { title: 'Grafana shows who still uses v1', at: 'mon', open: ['mon'], inner: ['mon-prom', 'mon-graf'], zoomIn: true, text: '' },
+          { title: 'The webshop moves to v2', path: P.webLb, at: 'lb', label: 'GET /v2/products', kind: 'http', text: '',
+            fork: { id: 'moved', question: '1 March: v1 calls at 0?', options: [
+              { id: 'yes', label: 'Yes', steps: [
+                { title: 'v1 is removed', path: P.ghDep, at: 'dep', els: ['copy1', 'copy2', 'copy3'], label: 'without /v1', kind: 'deploy', text: '' },
+                { title: 'A late v1 call gets 410 Gone', at: 'copy1', text: '' },
+              ] },
+              { id: 'no', label: 'No, the PIM still calls v1', steps: [
+                { title: 'The PIM still calls v1', path: P.pimLb, at: 'lb', label: 'PUT /v1/products', kind: 'http', text: '' },
+                { title: 'v1 stays, new end date', at: 'pim', text: '' },
+              ] },
+            ] } },
+        ] },
+    ];
+    const HINT = 'Click any box for what it is, why it\'s there and what the demo does today · ⤢ boxes zoom in';
+    let sc = null, stepIndex = 0;
+    const side = $('side');
+    function clearHighlight() {
+      scene.classList.remove('dimmed');
+      scene.querySelectorAll('.hl').forEach((e) => e.classList.remove('hl'));
+      scene.querySelectorAll('.ihl').forEach((e) => e.classList.remove('ihl'));
+      scene.classList.remove('inner-focus');
+      $('spot')?.classList.remove('show');
+    }
+    // ---- the packet --------------------------------------------------------------
+    const KIND = { user: '#fbbf24', http: '#38bdf8', token: '#c084fc', sql: '#fb7185', lock: '#34d399', health: '#f87171', image: '#a3e635', config: '#fdba74', deploy: '#f59e0b' };
+    function polyline(pts) {
+      const segs = [];
+      let total = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i], len = Math.hypot(bx - ax, by - ay);
+        segs.push({ ax, ay, bx, by, len, from: total });
+        total += len;
+      }
+      return {
+        total, d: 'M' + pts.map((p) => p.join(',')).join(' L'),
+        at(dist) {
+          const sg = segs.find((g) => dist <= g.from + g.len) || segs[segs.length - 1];
+          const q = sg.len ? Math.min(Math.max((dist - sg.from) / sg.len, 0), 1) : 1;
+          return [sg.ax + (sg.bx - sg.ax) * q, sg.ay + (sg.by - sg.ay) * q];
+        },
+      };
+    }
+    const packetEl = () => $('packet');
+    function setPacket(label, kind) {
+      const pk = packetEl();
+      pk.style.setProperty('--kind', KIND[kind] || KIND.http);
+      $('pk-text').textContent = label;
+      const w = $('pk-text').getComputedTextLength() + 22;
+      $('pk-pill').setAttribute('x', -w / 2);
+      $('pk-pill').setAttribute('width', w);
+      pk.classList.remove('hidden');
+    }
+    const placePacket = ([px, py]) => packetEl().setAttribute('transform', `translate(${px} ${py})`);
+    function spotlight(id) {
+      const b = scene.querySelector(`[data-el="${id}"]`).getBBox(), spot = $('spot');
+      spot.setAttribute('x', b.x - 10); spot.setAttribute('y', b.y - 10);
+      spot.setAttribute('width', b.width + 20); spot.setAttribute('height', b.height + 20);
+      spot.classList.add('show');
+    }
+
+    // a step without a path stays where the previous one ended (a check inside a box)
+    function pathOf(i) {
+      const step = steps()[i];
+      if (step.path) return step.path;
+      const prev = i > 0 ? pathOf(i - 1) : null;
+      const end = prev ? prev[prev.length - 1] : (() => { const b = EL[step.at]; return [b.x + b.w / 2, b.y + b.h / 2]; })();
+      return [end, end];
+    }
+    function stepBounds(step, path) {
+      const b = scene.querySelector(`[data-el="${step.at}"]`).getBBox();
+      const xs = [...path.map((p) => p[0]), b.x, b.x + b.width], ys = [...path.map((p) => p[1]), b.y, b.y + b.height];
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const w = Math.max(x1 - x0 + 300, 1100), hh = Math.max(y1 - y0 + 300, 700);
+      return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - hh / 2, w, h: hh };
+    }
+    function frameStep() {
+      if (!sc) return;
+      const step = steps()[stepIndex];
+      flyTo(step.zoomIn && arrived ? boxBounds(step.at) : stepBounds(step, pathOf(stepIndex)), 500, step.zoomIn && arrived ? BOX_ZOOM : MAX);
+    }
+
+    let packetAnim = null, arrived = false, innerTimers = [], picks = {};
+    // the steps of the chosen path: a fork ends the list until an option is picked
+    function steps() {
+      const out = [];
+      (function walk(list) {
+        for (const st of list) {
+          out.push(st);
+          if (st.fork) {
+            const o = st.fork.options.find((x) => x.id === picks[st.fork.id]);
+            if (o) walk(o.steps);
+            return;
+          }
+        }
+      })(sc.steps);
+      return out;
+    }
+    function runStep(i) {
+      stepIndex = Math.min(Math.max(i, 0), steps().length - 1);
+      const step = steps()[stepIndex];
+      cancelAnimationFrame(packetAnim);
+      innerTimers.forEach(clearTimeout); innerTimers = [];
+      clearHighlight();
+      arrived = false;
+      scene.style.setProperty('--sc', sc.color);
+      scene.classList.add('dimmed');
+      for (const id of new Set([step.at, ...(step.els || [])])) scene.querySelector(`[data-el="${id}"]`).classList.add('hl');
+      setOpen([]);
+      // past steps leave a faint trail, this step draws its own as the packet moves
+      const trails = $('trails');
+      trails.replaceChildren();
+      const all = steps();
+      for (let j = 0; j < stepIndex; j++) if (all[j].path) svg('path', { class: 'trail', d: polyline(all[j].path).d }, trails);
+      const path = pathOf(stepIndex), line = polyline(path), now = $('trail-now');
+      now.setAttribute('d', line.d);
+      now.style.strokeDasharray = `${line.total} ${line.total + 1}`;
+      now.style.strokeDashoffset = line.total;
+      setPacket(step.label || '', step.kind);
+      placePacket(line.at(0));
+      if (!step.path) packetEl().classList.add('hidden'); // nothing travels: a check inside the box
+      renderSteps();
+      flyTo(stepBounds(step, path));
+
+      const duration = reduceMotion || !line.total ? 0 : Math.min(Math.max(600 + line.total * 0.9, 900), 3000);
+      const t0 = performance.now() + (reduceMotion ? 0 : 250);
+      (function frame() {
+        const q = duration ? Math.min(Math.max((performance.now() - t0) / duration, 0), 1) : 1;
+        const e = q < 0.5 ? 2 * q * q : 1 - Math.pow(-2 * q + 2, 2) / 2;
+        placePacket(line.at(line.total * e));
+        now.style.strokeDashoffset = line.total * (1 - e);
+        if (q < 1) { packetAnim = requestAnimationFrame(frame); return; }
+        // arrived: light up the box, and open it if this step looks inside
+        arrived = true;
+        spotlight(step.at);
+        if (step.open) {
+          packetEl().classList.add('hidden'); // the box opens: let its inside be read
+          setOpen(step.open);
+          scene.classList.toggle('inner-focus', !!(step.inner && step.inner.length));
+          (step.inner || []).forEach((id, n) => innerTimers.push(setTimeout(() => scene.querySelector(`[data-inner="${id}"]`).classList.add('ihl'), reduceMotion ? 0 : 500 + n * 450)));
+        }
+        if (step.zoomIn) flyTo(boxBounds(step.at), 700, BOX_ZOOM);
+      })();
+    }
+
+    function renderList() {
+      $('side-title').textContent = 'Scenarios';
+      $('side-back').hidden = true;
+      $('side-body').innerHTML = `
+        <p class="intro">What would happen in production, step by step. The parts involved light up; click any box for the details.</p>
+        <div class="cards">${SCENARIOS.map((s) => `
+          <button class="sc-card" data-sc="${s.id}" style="--sc:${s.color}"><b>${s.name}</b><span>${s.desc}</span></button>`).join('')}</div>`;
+      $('side-body').querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => startScenario(b.dataset.sc)));
+    }
+    function renderSteps() {
+      const all = steps();
+      const step = all[stepIndex];
+      const waiting = !!step.fork && !picks[step.fork.id] && stepIndex === all.length - 1;
+      const last = stepIndex === all.length - 1 && !waiting;
+      const next = SCENARIOS[SCENARIOS.indexOf(sc) + 1];
+      side.style.setProperty('--sc', sc.color);
+      $('side-title').textContent = sc.name;
+      $('side-back').hidden = false;
+      $('side-body').innerHTML = `
+        <div class="progress">${all.map((_, i) => `<button class="seg${i < stepIndex ? ' done' : ''}${i === stepIndex ? ' now' : ''}" data-step="${i}" aria-label="Step ${i + 1}"></button>`).join('')}</div>
+        <article class="step-card">
+          <div class="step-num">Step ${stepIndex + 1}</div>
+          <h3>${step.title}</h3>
+          ${step.text ? `<p>${step.text}</p>` : ''}
+          ${step.fork ? `<div class="fork"><b>◆ ${step.fork.question}</b>${step.fork.options.map((o) =>
+            `<button class="fork-opt${picks[step.fork.id] === o.id ? ' picked' : ''}" data-opt="${o.id}">${o.label}</button>`).join('')}</div>` : ''}
+        </article>
+        <div class="controls">
+          <button class="ctl" id="prev" ${stepIndex === 0 ? 'disabled' : ''} aria-label="Previous step">←</button>
+          ${waiting ? '<button class="ctl primary" disabled>Choose above ↑</button>'
+                 : last ? (next ? `<button class="ctl primary" id="next-sc">Next: ${next.name} →</button>` : `<button class="ctl primary" id="done">Close</button>`)
+                 : `<button class="ctl primary" id="next">Next →</button>`}
+        </div>
+        <ol class="step-list">${all.map((s, i) => `<li class="${i < stepIndex ? 'done' : ''}${i === stepIndex ? ' now' : ''}" data-step="${i}"><span>${i + 1}</span>${s.title}${s.fork ? ' ◆' : ''}</li>`).join('')}${
+          all[all.length - 1].fork && !picks[all[all.length - 1].fork.id] ? '<li class="pending">… depends on the choice</li>' : ''}</ol>`;
+      const body = $('side-body');
+      body.querySelectorAll('[data-step]').forEach((el) => el.addEventListener('click', () => runStep(+el.dataset.step)));
+      $('prev')?.addEventListener('click', () => runStep(stepIndex - 1));
+      $('next')?.addEventListener('click', () => runStep(stepIndex + 1));
+      $('next-sc')?.addEventListener('click', () => startScenario(next.id));
+      $('done')?.addEventListener('click', stopScenario);
+      body.querySelectorAll('[data-opt]').forEach((b) => b.addEventListener('click', () => { picks[step.fork.id] = b.dataset.opt; runStep(stepIndex + 1); }));
+      body.scrollTop = 0;
+    }
+    function openSide() { side.classList.add('open'); $('sc-btn').setAttribute('aria-pressed', 'true'); if (!sc) renderList(); }
+    function closeSide() { stopScenario(); side.classList.remove('open'); $('sc-btn').setAttribute('aria-pressed', 'false'); fit(500); }
+    function startScenario(id) {
+      openSide();
+      sc = SCENARIOS.find((s) => s.id === id);
+      picks = {};
+      $('hint').textContent = '→ or Space: next step · ←: back · Esc: leave the scenario · click any box for details';
+      runStep(0);
+    }
+    function stopScenario() {
+      if (!sc) return;
+      sc = null;
+      cancelAnimationFrame(packetAnim);
+      clearHighlight();
+      setOpen([]);
+      $('trails').replaceChildren();
+      $('trail-now').setAttribute('d', '');
+      packetEl().classList.add('hidden');
+      renderList();
+      $('hint').textContent = HINT;
+      fit(500);
+    }
+    $('sc-btn').addEventListener('click', () => (side.classList.contains('open') ? closeSide() : openSide()));
+    $('side-close').addEventListener('click', closeSide);
+    $('side-back').addEventListener('click', stopScenario);
+
+    window.addEventListener('keydown', (e) => {
+      if (!detail.hidden) { if (e.key === 'Escape') closeInfo(); return; }
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomCenter(1.25); }
+      else if (e.key === '-') { e.preventDefault(); zoomCenter(0.8); }
+      else if (e.key === '0') fit(400);
+      else if (e.key === 's' || e.key === 'S') side.classList.contains('open') ? closeSide() : openSide();
+      else if (sc && (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter')) {
+        e.preventDefault();
+        const all = steps(), cur = all[stepIndex];
+        if (stepIndex < all.length - 1) runStep(stepIndex + 1);
+        else if (cur.fork && !picks[cur.fork.id]) {} // waiting for a choice
+        else { const n = SCENARIOS[SCENARIOS.indexOf(sc) + 1]; n ? startScenario(n.id) : stopScenario(); }
+      }
+      else if (sc && e.key === 'ArrowLeft') runStep(stepIndex - 1);
+      else if (e.key === 'Escape') { if (sc) stopScenario(); else if (closeBoxes()) {} else if (side.classList.contains('open')) closeSide(); }
+    });
+    // Keyboard: Enter on a focused box opens its card.
+    scene.addEventListener('keydown', (e) => {
+      const el = e.target.closest?.('[data-el]');
+      if (!el || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const r = el.getBoundingClientRect();
+      clickBox(el.dataset.el, r.left + r.width / 2, r.top + r.height / 2);
+    });
+
+    draw();
+    renderList();
+    fit();
+  })();
+</script>
+</body>
+</html>

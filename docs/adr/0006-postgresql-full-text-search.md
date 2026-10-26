@@ -15,7 +15,7 @@ I use the full-text search that is built into PostgreSQL.
 ## Why
 - No extra system to run, monitor and keep in sync. The data and the search are in the same database, in the same transaction.
 - A product can be found as soon as it's saved.
-- It's much faster than needed, see the measurement above.
+- It's much faster than needed, see "Measured" below.
 
 ## Measured
 With 1,000,008 products, every search takes under ~240 ms inside the service. The slowest case is two letters (`re`, 269,232 matches, which all have to be ranked and counted). A test runs on every build (`SearchUsesIndexTest`) and checks that the search really uses the GIN index, because that's what makes it fast.

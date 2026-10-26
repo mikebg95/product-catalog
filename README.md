@@ -8,7 +8,7 @@ Built for the JDriven technical assessment "Real-time Product Catalog API".
 
 ![System context: the Product Catalog between the PIM, the Price System and the Webshop](docs/images/c4-context.png)
 
-*System context (C4 level 1). Interactive version: [`docs/diagrams/c4-model.html`](docs/diagrams/c4-model.html)*
+*System context (C4 level 1). Interactive version: [C4 model](https://mikebg95.github.io/product-catalog/diagrams/c4-model.html)*
 
 ## Contents
 
@@ -21,6 +21,7 @@ Built for the JDriven technical assessment "Real-time Product Catalog API".
 - [Building and testing](#building-and-testing)
 - [Configuration](#configuration)
 - [Project structure](#project-structure)
+- [Scope and time](#scope-and-time)
 - [Known limitations](#known-limitations)
 
 ## What it does
@@ -112,7 +113,7 @@ Errors use the standard Problem format ([RFC 9457](https://www.rfc-editor.org/rf
 
 ![Components of catalog-service: the domain in the middle, adapters plugged into ports](docs/images/c4-components.png)
 
-*Components (C4 level 3). Interactive version, with step-by-step request flows: [`docs/diagrams/c4-model.html`](docs/diagrams/c4-model.html)*
+*Components (C4 level 3). Interactive version, with step-by-step request flows: [C4 model](https://mikebg95.github.io/product-catalog/diagrams/c4-model.html)*
 
 - **Lightweight hexagonal** ([ADR 1](docs/adr/0001-lightweight-hexagonal-architecture.md)): the domain (`Product`, `Price`) is plain Java with no Spring, database or HTTP. The database and the price system plug in through ports (`ProductRepository`, `PriceSource`). ArchUnit tests enforce the boundaries.
 - **Price sync** ([ADR 7](docs/adr/0007-scheduled-pull-for-price-sync.md)): `PriceSyncScheduler` → `PriceSyncService` → `PriceSource` (the HTTP client). Unknown SKUs and invalid prices are skipped, and a price is only saved if it's newer. A failed round is logged and retried on the next one.
@@ -124,13 +125,13 @@ A design, not built: how the same image would run on a shared Kubernetes platfor
 
 ![Production view: several copies behind a load balancer, managed PostgreSQL, secrets, CI/CD and monitoring](docs/images/production.png)
 
-*Production view (hypothetical). Interactive version, with scenarios like a deploy or a crash: [`docs/diagrams/production-diagram.html`](docs/diagrams/production-diagram.html)*
+*Production view (hypothetical). Interactive version, with scenarios like a deploy or a crash: [production view](https://mikebg95.github.io/product-catalog/diagrams/production-diagram.html)*
 
 - Several copies behind a load balancer, scaled automatically, updated one at a time without downtime.
 - Settings from a ConfigMap, passwords from the cloud's secret store, both as environment variables: the same image as in docker-compose.
 - A managed PostgreSQL with backups, OAuth2 tokens for the PIM and the webshop, and Prometheus and Grafana with alerts.
 
-The diagrams are HTML pages: clone the repo and open them in a browser.
+The interactive diagrams are hosted on GitHub Pages. Their source is in [`docs/diagrams`](docs/diagrams).
 
 ## Design decisions
 
@@ -208,6 +209,14 @@ monitoring/             Prometheus and Grafana configuration
 scripts/                seed a million products, reset the demo
 docs/                   ADRs and diagrams
 ```
+
+## Scope and time
+
+The assignment suggests up to 6 hours. I spent more, on purpose: I wanted to show the whole flow working, not only the API.
+
+- **The assignment:** `catalog-service`: the domain, the REST API, the search, the price sync, the tests, Docker and CI. Written by me, test-first for the domain, the search and the price sync.
+- **Extras for the demo:** the three frontends (vibecoded, only there to show the flow in a browser), `fake-price-service`, ShedLock with two copies in compose, Prometheus and Grafana, the million-product seed script, and the production view.
+- **With only 6 hours:** I'd have built `catalog-service` with WireMock standing in for the price system, and left out the extras.
 
 ## Known limitations
 

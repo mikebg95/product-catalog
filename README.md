@@ -4,8 +4,6 @@
 
 A REST microservice that stores the products of a webshop, keeps their prices in sync with an external price system, and offers full-text search across all product characteristics in well under a second.
 
-Built for the JDriven technical assessment "Real-time Product Catalog API".
-
 ![System context: the Product Catalog between the PIM, the Price System and the Webshop](docs/images/c4-context.png)
 
 *System context (C4 level 1). Interactive version: [C4 model](https://mikebg95.github.io/product-catalog/diagrams/c4-model.html)*
